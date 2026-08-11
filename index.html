@@ -1,0 +1,4324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#020617">
+  <title>Álbum Digital</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #eef2f7;
+      --surface: rgba(255, 255, 255, 0.82);
+      --surface-strong: #ffffff;
+      --line: rgba(15, 23, 42, 0.08);
+      --text: #111827;
+      --muted: #667085;
+      --accent: #0f172a;
+      --accent-soft: #e9eef7;
+      --blue: #3b82f6;
+      --gold-rgb: 215, 183, 120;
+      --shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+      --radius-xl: 30px;
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      --radius-sm: 14px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100dvh;
+      font-family: "Manrope", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top, rgba(59, 130, 246, 0.12), transparent 24%),
+        linear-gradient(180deg, #f7f9fc 0%, #edf2f8 100%);
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+      text-size-adjust: 100%;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body.overlay-open {
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.4), transparent 18%),
+        linear-gradient(0deg, rgba(255, 255, 255, 0.18), transparent 22%);
+      pointer-events: none;
+    }
+
+    #counter {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      background: rgba(17, 24, 39, 0.5);
+      padding: 8px 12px;
+      border-radius: 999px;
+      backdrop-filter: blur(14px);
+    }
+
+    .page-shell {
+      position: relative;
+      z-index: 1;
+      width: min(460px, 100%);
+      margin: 0 auto;
+      min-height: 100dvh;
+      padding: calc(env(safe-area-inset-top, 0px) + 14px) 14px 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-frame {
+      flex: 1;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 14px;
+    }
+
+    .app-bar,
+    .summary-card,
+    .event-card,
+    .gallery-panel {
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      box-shadow: var(--shadow);
+    }
+
+    .app-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 22px;
+    }
+
+    .app-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-icon {
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+      background: linear-gradient(135deg, #111827, #334155);
+      box-shadow: 0 12px 22px rgba(15, 23, 42, 0.2);
+    }
+
+    .app-icon[data-length="3"] { font-size: 11.5px; }
+    .app-icon[data-length="4"] { font-size: 9.5px; }
+
+    .app-title span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .app-title strong {
+      display: block;
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(239, 68, 68, 0.12);
+      color: #dc2626;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status-pill::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #ef4444;
+      box-shadow: 0 0 0 rgba(239, 68, 68, 0.55);
+      animation: livePulse 1.6s infinite;
+    }
+
+    @keyframes livePulse {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45);
+      }
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+      }
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+      }
+    }
+
+    .summary-card {
+      padding: 10px;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+    }
+
+    .summary-cover {
+      position: relative;
+      min-height: 250px;
+      padding: 18px;
+      display: flex;
+      align-items: flex-end;
+      border-radius: 24px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0.72)),
+        var(--album-cover-image, url("https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=80")) center/cover;
+    }
+
+    .summary-badge {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      backdrop-filter: blur(10px);
+    }
+
+    .summary-date {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(17, 24, 39, 0.38);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      backdrop-filter: blur(10px);
+    }
+
+    .summary-copy h1 {
+      font-family: "Cormorant Garamond", serif;
+      font-size: clamp(3.2rem, 12vw, 4.5rem);
+      line-height: 0.88;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .summary-copy p {
+      max-width: 250px;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .content-stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .gallery-panel {
+      border-radius: var(--radius-xl);
+      padding: 18px;
+      content-visibility: auto;
+      contain-intrinsic-size: 700px;
+    }
+
+    .challenge-entry {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 18px;
+      border-radius: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.82);
+      background:
+        radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 34%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(247, 250, 253, 0.94));
+      box-shadow: var(--shadow);
+      cursor: pointer;
+    }
+
+    .challenge-entry-copy {
+      min-width: 0;
+    }
+
+    .challenge-entry-copy span {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--blue);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .challenge-entry-copy h3 {
+      font-size: 1rem;
+      line-height: 1.25;
+      margin-bottom: 4px;
+    }
+
+    .challenge-entry-copy p {
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    .challenge-entry-icon {
+      flex: 0 0 auto;
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      color: #fff;
+      font-size: 20px;
+      background: linear-gradient(135deg, #111827, #334155);
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.16);
+    }
+
+    .wheel-popup {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(15, 23, 42, 0.24);
+      backdrop-filter: blur(12px);
+      z-index: 1002;
+    }
+
+    .wheel-popup.open {
+      display: grid;
+      place-items: center;
+    }
+
+    .wheel-popup-card {
+      width: min(460px, 100%);
+      max-height: min(88dvh, 760px);
+      padding: 18px;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.84);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
+      overflow: hidden;
+    }
+
+    .wheel-card {
+      display: grid;
+      gap: 18px;
+      align-content: start;
+      transform-origin: top center;
+      transform: scale(var(--wheel-card-scale, 1));
+      transition: transform 0.24s ease;
+    }
+
+    .wheel-card-frame {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 0;
+      height: var(--wheel-card-height, auto);
+      overflow: hidden;
+    }
+
+    .wheel-popup.is-compact .wheel-popup-card {
+      padding: 16px;
+    }
+
+    .wheel-popup.is-compact .wheel-popup-head {
+      margin-bottom: 12px;
+    }
+
+    .wheel-popup.is-compact .wheel-popup-copy h3 {
+      font-size: 1rem;
+    }
+
+    .wheel-popup.is-compact .wheel-popup-copy p {
+      font-size: 0.84rem;
+      line-height: 1.4;
+    }
+
+    .wheel-popup.is-compact .wheel-card {
+      gap: 12px;
+    }
+
+    .wheel-popup.is-compact .wheel-wrap {
+      width: min(100%, 276px);
+    }
+
+    .wheel-popup.is-compact .wheel-controls {
+      margin-top: 8px;
+      gap: 12px;
+    }
+
+    .wheel-popup.is-compact .wheel-button,
+    .wheel-popup.is-compact .wheel-upload-primary,
+    .wheel-popup.is-compact .wheel-upload-secondary {
+      min-height: 44px;
+    }
+
+    .wheel-popup.is-compact .wheel-result {
+      padding: 14px 16px;
+    }
+
+    .wheel-popup.is-compact .wheel-result-title {
+      font-size: 0.95rem;
+    }
+
+    .wheel-popup.is-compact .wheel-result-description {
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+
+    .wheel-popup.is-compact .wheel-upload-actions {
+      gap: 10px;
+    }
+
+    .wheel-popup.is-compact .wheel-upload-primary,
+    .wheel-popup.is-compact .wheel-upload-secondary {
+      min-height: 42px;
+      padding: 0 8px;
+      font-size: 0.79rem;
+    }
+
+    .wheel-popup.has-result .wheel-card {
+      gap: 10px;
+    }
+
+    .wheel-popup.has-result .wheel-wrap {
+      width: min(100%, 254px);
+    }
+
+    .wheel-popup.has-result .wheel-controls {
+      margin-top: 8px;
+      gap: 10px;
+    }
+
+    .wheel-popup.has-result .wheel-result {
+      padding: 14px 16px;
+    }
+
+    .wheel-popup.has-result .wheel-upload-primary,
+    .wheel-popup.has-result .wheel-upload-secondary {
+      min-height: 42px;
+      font-size: 0.8rem;
+    }
+
+    .wheel-popup.is-compact.has-result .wheel-popup-copy p {
+      display: none;
+    }
+
+    .wheel-popup.is-compact.has-result .wheel-wrap {
+      width: min(100%, 224px);
+    }
+
+    .wheel-popup.is-compact.has-result .wheel-card {
+      gap: 8px;
+    }
+
+    .wheel-popup.is-compact.has-result .wheel-controls {
+      margin-top: 4px;
+      gap: 8px;
+    }
+
+    .wheel-popup.is-compact.has-result .wheel-result {
+      padding: 12px 14px;
+    }
+
+    .wheel-popup.is-compact.has-result .wheel-result strong {
+      margin-bottom: 6px;
+    }
+
+    .wheel-popup.is-compact.has-result .wheel-result-title {
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+
+    .wheel-popup.is-compact.has-result .wheel-result-description {
+      font-size: 0.74rem;
+      line-height: 1.35;
+    }
+
+    .wheel-popup.is-compact.has-result .wheel-upload-actions {
+      gap: 8px;
+    }
+
+    .wheel-popup.is-compact.has-result .wheel-upload-primary,
+    .wheel-popup.is-compact.has-result .wheel-upload-secondary {
+      min-height: 40px;
+      font-size: 0.74rem;
+      padding: 0 6px;
+    }
+
+    .wheel-popup-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .wheel-popup-copy span {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--blue);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .wheel-popup-copy h3 {
+      font-size: 1.14rem;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+
+    .wheel-popup-copy p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .wheel-popup-close {
+      width: 34px;
+      height: 34px;
+      border: 0;
+      border-radius: 999px;
+      background: #f3f4f6;
+      color: var(--text);
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .wheel-wrap {
+      position: relative;
+      width: min(100%, 308px);
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      margin: 0 auto;
+      overflow: visible;
+    }
+
+    .wheel-pointer {
+      position: absolute;
+      top: -16px;
+      left: 50%;
+      width: 24px;
+      height: 30px;
+      transform: translateX(-50%);
+      display: grid;
+      place-items: center;
+      filter: drop-shadow(0 8px 10px rgba(15, 23, 42, 0.16));
+      z-index: 3;
+    }
+
+    .wheel-pointer::before {
+      content: "↓";
+      color: #111827;
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .wheel-pointer::after {
+      content: none;
+    }
+
+    .wheel {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 10px solid rgba(255, 255, 255, 0.82);
+      box-shadow:
+        0 18px 34px rgba(15, 23, 42, 0.12),
+        inset 0 2px 0 rgba(255, 255, 255, 0.82);
+      background: #eef2ff;
+      transition: transform 4.6s cubic-bezier(0.18, 0.78, 0.16, 1);
+      overflow: hidden;
+    }
+
+    .wheel::after {
+      content: "";
+      position: absolute;
+      inset: 50%;
+      width: 66px;
+      height: 66px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
+      border: 8px solid rgba(255, 255, 255, 0.82);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+      z-index: 2;
+    }
+
+    .wheel-labels {
+      position: absolute;
+      inset: 0;
+      list-style: none;
+      pointer-events: none;
+    }
+
+    .wheel-label {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 88px;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      transform-origin: center center;
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #243041;
+      line-height: 1.12;
+    }
+
+    .wheel-label span {
+      display: block;
+      max-width: 88px;
+      text-wrap: balance;
+      transform-origin: center center;
+      white-space: normal;
+    }
+
+    .wheel-controls {
+      display: grid;
+      gap: 14px;
+      width: 100%;
+      justify-items: center;
+      margin-top: 18px;
+    }
+
+    .wheel-button {
+      min-width: 162px;
+      min-height: 46px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #111827, #334155);
+      color: #fff;
+      font: inherit;
+      font-weight: 800;
+      box-shadow: 0 14px 26px rgba(15, 23, 42, 0.16);
+      cursor: pointer;
+    }
+
+    .wheel-button:disabled {
+      opacity: 0.72;
+      cursor: default;
+    }
+
+    .wheel-result {
+      min-height: 48px;
+      width: 100%;
+      padding: 16px 18px;
+      border-radius: 16px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      color: var(--text);
+      font-size: 0.9rem;
+      line-height: 1.45;
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      transition: opacity 0.24s ease, transform 0.24s ease, box-shadow 0.24s ease;
+    }
+
+    .wheel-result.highlight {
+      animation: wheelResultPop 0.5s cubic-bezier(0.2, 0.9, 0.2, 1);
+      box-shadow: 0 16px 30px rgba(15, 23, 42, 0.1);
+    }
+
+    .wheel-result strong {
+      display: block;
+      margin-bottom: 9px;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .wheel-result-title {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .wheel-result-description {
+      display: block;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .wheel-upload-actions {
+      width: 100%;
+      display: none;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    .wheel-upload-actions.show {
+      display: grid;
+      animation: wheelActionsIn 0.35s ease forwards;
+    }
+
+    .wheel-upload-primary,
+    .wheel-upload-secondary {
+      width: 100%;
+      min-height: 44px;
+      padding: 0 10px;
+      border-radius: 18px;
+      border: 0;
+      font: inherit;
+      font-size: 0.83rem;
+      line-height: 1.2;
+      font-weight: 800;
+      cursor: pointer;
+      text-wrap: balance;
+    }
+
+    .wheel-upload-primary {
+      background: linear-gradient(135deg, #111827, #334155);
+      color: #fff;
+      box-shadow: 0 14px 26px rgba(15, 23, 42, 0.16);
+    }
+
+    .wheel-upload-secondary {
+      background: rgba(248, 250, 252, 0.96);
+      color: var(--text);
+      border: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    @keyframes wheelResultPop {
+      0% {
+        transform: translateY(12px) scale(0.96);
+        opacity: 0;
+      }
+      60% {
+        transform: translateY(-4px) scale(1.02);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes wheelActionsIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      min-height: 56px;
+      padding: 15px 18px;
+      border-radius: 18px;
+      border: none;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 800;
+      background: linear-gradient(135deg, #111827, #334155);
+      box-shadow: 0 14px 26px rgba(15, 23, 42, 0.22);
+      cursor: pointer;
+    }
+
+    .btn::before {
+      content: "+";
+      width: 24px;
+      height: 24px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-head span {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--blue);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .section-head h3 {
+      font-size: 1.2rem;
+      line-height: 1.2;
+    }
+
+    .section-action {
+      flex: 0 0 auto;
+    }
+
+    .section-action.hidden {
+      display: none;
+    }
+
+    .projector-btn {
+      min-height: 38px;
+      padding: 0 14px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+      cursor: pointer;
+    }
+
+    .feed {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .polaroid {
+      position: relative;
+      perspective: 1200px;
+      min-height: 252px;
+      contain: layout paint style;
+      border-radius: 22px;
+      filter: drop-shadow(0 18px 26px rgba(15, 23, 42, 0.08));
+    }
+
+    .polaroid-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 252px;
+      transform-style: preserve-3d;
+      transition: transform 0.55s ease;
+    }
+
+    .polaroid.is-flipped .polaroid-inner {
+      transform: rotateY(180deg);
+    }
+
+    .polaroid-face {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: linear-gradient(180deg, #ffffff 0%, #fffdfa 100%);
+      border: 1px solid rgba(15, 23, 42, 0.05);
+      border-radius: 22px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .polaroid-back {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 20px;
+      transform: rotateY(180deg);
+      background:
+        linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    .polaroid-front img {
+      display: block;
+      width: calc(100% - 22px);
+      margin: 11px 11px 0;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border-radius: 14px;
+      border: 1px solid rgba(15, 23, 42, 0.04);
+      box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06);
+    }
+
+    .polaroid-front p {
+      min-height: 72px;
+      padding: 20px 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Caveat", cursive;
+      font-size: 1.32rem;
+      font-weight: 700;
+      color: #253042;
+      text-align: center;
+      letter-spacing: 0.01em;
+      transform: rotate(-1.6deg);
+      transform-origin: center;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .photo-open {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .flip-toggle {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 30px;
+      height: 30px;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.16);
+      backdrop-filter: blur(12px);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+        0 8px 14px rgba(15, 23, 42, 0.08);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      z-index: 3;
+      overflow: hidden;
+    }
+
+    .polaroid:not(.is-flipped) .polaroid-back .flip-toggle {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .polaroid.is-flipped .polaroid-front .flip-toggle {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .flip-toggle::before {
+      content: "↻";
+      position: relative;
+      z-index: 1;
+    }
+
+    .flip-toggle::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: conic-gradient(rgba(255, 255, 255, 0.45) calc(var(--flip-progress, 0) * 1%), transparent 0);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .polaroid-back .flip-toggle {
+      background: rgba(15, 23, 42, 0.08);
+      color: var(--accent);
+      box-shadow:
+        inset 0 0 0 1px rgba(15, 23, 42, 0.08),
+        0 8px 14px rgba(15, 23, 42, 0.04);
+    }
+
+    .polaroid.is-counting .flip-toggle::after {
+      opacity: 1;
+    }
+
+    .polaroid-back-content {
+      width: 100%;
+      height: 100%;
+      min-height: 200px;
+      padding-top: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .polaroid-back-label {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--blue);
+    }
+
+    .polaroid-back-message {
+      font-size: 0.92rem;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .polaroid-back-name {
+      margin-top: auto;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--muted);
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      padding: 26px 18px;
+      text-align: center;
+      border-radius: 20px;
+      border: 1px dashed rgba(15, 23, 42, 0.12);
+      color: var(--muted);
+      background: rgba(248, 250, 252, 0.8);
+    }
+
+    .empty-state strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    .empty-state span {
+      display: block;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.28);
+      backdrop-filter: blur(14px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+
+    .modal-content {
+      width: min(420px, 100%);
+      padding: 24px;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+      animation: modalIn 0.25s ease;
+      overscroll-behavior: contain;
+    }
+
+    @keyframes modalIn {
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modal-content h3 {
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+    }
+
+    .modal-copy {
+      margin-bottom: 16px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 0.92rem;
+    }
+
+    .modal-content input {
+      width: 100%;
+      padding: 15px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      background: rgba(248, 250, 252, 0.95);
+      color: var(--text);
+      font: inherit;
+      outline: none;
+    }
+
+    .modal-content textarea {
+      width: 100%;
+      min-height: 96px;
+      margin-top: 10px;
+      padding: 15px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      background: rgba(248, 250, 252, 0.95);
+      color: var(--text);
+      font: inherit;
+      outline: none;
+      resize: none;
+    }
+
+    .modal-content input:focus,
+    .modal-content textarea:focus {
+      border-color: rgba(59, 130, 246, 0.42);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+    }
+
+    .modal-content button {
+      width: 100%;
+      margin-top: 12px;
+      padding: 15px 16px;
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #111827, #334155);
+      color: #fff;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .admin-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.34);
+      backdrop-filter: blur(14px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1006;
+      padding: 16px;
+    }
+
+    .admin-modal.open {
+      display: flex;
+    }
+
+    .admin-card {
+      width: min(430px, 100%);
+      max-height: min(82dvh, 740px);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      border-radius: 28px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+      animation: modalIn 0.25s ease;
+    }
+
+    .admin-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 22px 22px 16px;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    }
+
+    .admin-head span {
+      display: block;
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .admin-head h3 {
+      margin-top: 4px;
+      font-size: 1.12rem;
+    }
+
+    .admin-close {
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 999px;
+      background: rgba(248, 250, 252, 0.9);
+      color: var(--text);
+      font: inherit;
+      font-size: 1.08rem;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .admin-body {
+      padding: 18px 22px 22px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .admin-auth,
+    .admin-panel {
+      display: none;
+    }
+
+    .admin-auth.show,
+    .admin-panel.show {
+      display: block;
+    }
+
+    .admin-auth .modal-copy {
+      margin-bottom: 14px;
+    }
+
+    .admin-auth input + input {
+      margin-top: 10px;
+    }
+
+    .admin-login-error {
+      min-height: 20px;
+      margin-top: 12px;
+      color: #dc2626;
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .admin-event-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.06);
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .admin-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .admin-item {
+      display: grid;
+      grid-template-columns: 64px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(15, 23, 42, 0.07);
+      background: rgba(248, 250, 252, 0.88);
+    }
+
+    .admin-thumb {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      object-fit: cover;
+      background: rgba(226, 232, 240, 0.9);
+    }
+
+    .admin-item strong,
+    .admin-item span {
+      display: block;
+    }
+
+    .admin-item strong {
+      font-size: 0.92rem;
+      line-height: 1.35;
+    }
+
+    .admin-item span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .admin-delete {
+      padding: 11px 13px;
+      border: none;
+      border-radius: 14px;
+      background: rgba(239, 68, 68, 0.12);
+      color: #dc2626;
+      font: inherit;
+      font-size: 0.84rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .admin-delete:disabled {
+      opacity: 0.56;
+      cursor: wait;
+    }
+
+    .admin-empty {
+      padding: 20px 16px;
+      border-radius: 18px;
+      border: 1px dashed rgba(15, 23, 42, 0.12);
+      color: var(--muted);
+      text-align: center;
+      background: rgba(248, 250, 252, 0.82);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .client-download-card {
+      width: min(400px, 100%);
+    }
+
+    .client-download-auth input {
+      width: 100%;
+      padding: 14px 15px;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      border-radius: 15px;
+      background: rgba(248, 250, 252, 0.96);
+      color: var(--text);
+      font: inherit;
+      outline: none;
+    }
+
+    .client-download-auth input:focus {
+      border-color: rgba(59, 130, 246, 0.42);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+
+    .client-download-auth button,
+    .client-download-button {
+      width: 100%;
+      min-height: 48px;
+      margin-top: 12px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 15px;
+      background: linear-gradient(135deg, #111827, #334155);
+      color: #fff;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .client-download-button:disabled {
+      opacity: 0.56;
+      cursor: wait;
+    }
+
+    .client-download-summary {
+      display: grid;
+      gap: 12px;
+    }
+
+    .client-download-event {
+      padding: 14px 15px;
+      border: 1px solid rgba(15, 23, 42, 0.07);
+      border-radius: 18px;
+      background: rgba(248, 250, 252, 0.88);
+    }
+
+    .client-download-event span,
+    .client-download-event strong {
+      display: block;
+    }
+
+    .client-download-event span {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .client-download-event strong {
+      margin-top: 4px;
+      font-size: 1rem;
+    }
+
+    .client-download-status {
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+      max-width: min(86vw, 360px);
+      padding: 13px 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      background: rgba(15, 23, 42, 0.82);
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-align: center;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 18px 34px rgba(15, 23, 42, 0.24);
+      transform: translate(-50%, 12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      z-index: 1005;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .anon {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .anon input {
+      width: 16px;
+      height: 16px;
+      accent-color: #111827;
+    }
+
+    #viewer {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(2, 6, 23, 0.96);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+
+    .projector {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at center, rgba(255, 255, 255, 0.06), transparent 24%),
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.04), transparent 26%),
+        linear-gradient(180deg, #010309 0%, #050b16 38%, #020617 100%);
+      z-index: 1004;
+      padding: 20px;
+    }
+
+    .projector.open {
+      display: flex;
+    }
+
+    .projector-shell {
+      position: relative;
+      width: min(1100px, 100%);
+      display: grid;
+      gap: 14px;
+      justify-items: center;
+    }
+
+    .projector-topbar {
+      position: absolute;
+      top: -4px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 3;
+    }
+
+    .projector-control {
+      width: 38px;
+      min-width: 38px;
+      height: 38px;
+      padding: 0;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+
+    .projector-control::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: conic-gradient(rgba(255, 255, 255, 0.35) calc(var(--projector-progress, 0) * 1%), transparent 0);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .projector-control.is-counting::after {
+      opacity: 1;
+    }
+
+    .projector-control span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .projector-icon-pause {
+      width: 10px;
+      height: 12px;
+      display: inline-grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 3px;
+    }
+
+    .projector-icon-pause::before,
+    .projector-icon-pause::after {
+      content: "";
+      display: block;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .projector-icon-play {
+      width: 0;
+      height: 0;
+      border-top: 7px solid transparent;
+      border-bottom: 7px solid transparent;
+      border-left: 10px solid currentColor;
+      margin-left: 2px;
+    }
+
+    .projector-stage {
+      position: relative;
+      width: 100%;
+      min-height: min(72vh, 760px);
+      display: grid;
+      place-items: center;
+      padding: 28px 18px 20px;
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 36px 90px rgba(0, 0, 0, 0.42);
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .projector-stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at center, rgba(255, 255, 255, 0.09), transparent 42%);
+      pointer-events: none;
+    }
+
+    .projector-stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.22), transparent 18%, transparent 78%, rgba(0, 0, 0, 0.3));
+      pointer-events: none;
+    }
+
+    .projector-photo {
+      width: min(100%, 920px);
+      max-height: 66vh;
+      object-fit: contain;
+      border-radius: 22px;
+      box-shadow:
+        0 30px 70px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.06);
+      opacity: 0;
+      filter: blur(10px);
+      transform: scale(0.982) translateY(10px);
+      transition: opacity 0.8s ease, transform 0.8s ease, filter 0.8s ease;
+    }
+
+    .projector-photo.show {
+      opacity: 1;
+      filter: blur(0);
+      transform: scale(1) translateY(0);
+    }
+
+    .projector-meta {
+      width: min(760px, 100%);
+      width: min(640px, 100%);
+      padding: 11px 16px 13px;
+      border-radius: 16px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      color: #fff;
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16);
+    }
+
+    .projector-meta.has-message {
+      border-radius: 18px;
+      padding-top: 12px;
+      padding-bottom: 14px;
+    }
+
+    .projector-byline {
+      display: block;
+      margin-bottom: 3px;
+      color: rgba(255, 255, 255, 0.68);
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .projector-name {
+      font-family: "Cormorant Garamond", serif;
+      font-size: clamp(1.6rem, 3vw, 2.35rem);
+      line-height: 0.96;
+      margin-bottom: 2px;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+
+    .projector-message {
+      max-width: 640px;
+      margin: 0 auto;
+      padding-top: 8px;
+      font-size: 0.84rem;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.68);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .projector-message:empty {
+      display: none;
+    }
+
+    .projector-message:not(:empty) {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+
+    .projector-counter {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.66);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    #viewerImg {
+      max-width: 92%;
+      max-height: 84%;
+      border-radius: 18px;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      touch-action: none;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+    }
+
+    #viewer.note-open #viewerImg {
+      filter: blur(8px) brightness(0.72);
+      transform: scale(0.985);
+    }
+
+    .viewer-name-pill {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      min-height: 38px;
+      padding: 0 16px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.34);
+      color: #fff;
+      font: inherit;
+      font-size: 0.86rem;
+      font-weight: 700;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+      z-index: 3;
+    }
+
+    .viewer-name-pill.show {
+      display: inline-flex;
+    }
+
+    .viewer-name-pill.hidden {
+      display: none;
+    }
+
+    .viewer-note-trigger {
+      position: absolute;
+      left: 50%;
+      bottom: 20px;
+      width: 42px;
+      height: 42px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transform: translateX(-50%);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.34);
+      color: #fff;
+      font-size: 20px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+      cursor: pointer;
+      z-index: 3;
+      animation: noteFloat 1.8s ease-in-out infinite;
+    }
+
+    .viewer-note-trigger::before {
+      content: "↑";
+      font-size: 20px;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .viewer-note-trigger.show {
+      display: inline-flex;
+    }
+
+    .viewer-note-trigger.hidden {
+      display: none;
+    }
+
+    @keyframes noteFloat {
+      0% {
+        transform: translateX(-50%) translateY(0);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+      }
+      50% {
+        transform: translateX(-50%) translateY(-5px);
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.22);
+      }
+      100% {
+        transform: translateX(-50%) translateY(0);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+      }
+    }
+
+    .viewer-note-overlay {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(86vw, 420px);
+      max-height: min(58vh, 420px);
+      margin: 0 auto;
+      padding: 20px 18px 18px;
+      border-radius: 26px;
+      color: #fff;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(0.96);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      z-index: 4;
+      overscroll-behavior: contain;
+    }
+
+    .viewer-note-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .viewer-note-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .viewer-note-name {
+      font-family: "Caveat", cursive;
+      font-size: 1.7rem;
+      line-height: 0.95;
+      color: #fff;
+      transform: rotate(-1.2deg);
+      transform-origin: left center;
+    }
+
+    .viewer-note-close {
+      width: 30px;
+      height: 30px;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .viewer-message {
+      max-height: min(34vh, 260px);
+      overflow: auto;
+      padding-right: 2px;
+      font-size: 0.92rem;
+      line-height: 1.68;
+      color: rgba(255, 255, 255, 0.92);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    #closeViewer {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.34);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 6;
+    }
+
+    .nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      font-weight: 600;
+      color: #fff;
+      background: rgba(15, 23, 42, 0.34);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 999px;
+      cursor: pointer;
+      user-select: none;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 6;
+      pointer-events: auto;
+      transition: transform 0.18s ease, background 0.18s ease, opacity 0.18s ease;
+    }
+
+    .nav.left { left: 14px; }
+    .nav.right { right: 14px; }
+
+    #viewer.note-open .nav,
+    #viewer.zoomed .nav {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .nav:hover {
+      background: rgba(15, 23, 42, 0.44);
+    }
+
+    .nav:active {
+      transform: translateY(-50%) scale(0.96);
+    }
+
+    .fab-upload {
+      position: fixed;
+      right: 18px;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+      z-index: 50;
+      min-width: 148px;
+      min-height: 52px;
+      padding: 0 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.88);
+      color: rgba(15, 23, 42, 0.92);
+      font-weight: 650;
+      font-size: 0.9rem;
+      letter-spacing: -0.01em;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.54));
+      backdrop-filter: blur(34px) saturate(1.35);
+      -webkit-backdrop-filter: blur(34px) saturate(1.35);
+      box-shadow:
+        0 14px 30px rgba(15, 23, 42, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.96),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.32);
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+    }
+
+    .fab-upload::before {
+      content: "+";
+      width: 24px;
+      height: 24px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.05);
+      color: rgba(15, 23, 42, 0.84);
+      font-size: 14px;
+      font-weight: 400;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.72),
+        0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .fab-upload div {
+      position: relative;
+      top: -0.5px;
+    }
+
+    .fab-upload:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        0 16px 34px rgba(15, 23, 42, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.98),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.36);
+    }
+
+    .fab-upload:active {
+      transform: translateY(0) scale(0.975);
+      box-shadow:
+        0 10px 20px rgba(15, 23, 42, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.94);
+    }
+
+    .brand-footer {
+      position: relative;
+      width: calc(100% + 28px);
+      margin-top: 16px;
+      margin-left: -14px;
+      padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      color: #1f2937;
+      border-radius: 0;
+      border: 0;
+      border-top: 1px solid rgba(15, 23, 42, 0.08);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.88)),
+        rgba(255, 255, 255, 0.92);
+      box-shadow:
+        0 -12px 28px rgba(15, 23, 42, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(24px) saturate(145%);
+      -webkit-backdrop-filter: blur(24px) saturate(145%);
+    }
+
+    .brand-copy {
+      min-width: 0;
+      padding-left: max(0px, env(safe-area-inset-left, 0px));
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-copy::before {
+      content: "";
+      width: 5px;
+      height: 5px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: radial-gradient(circle, #64748b, #334155 48%, rgba(51, 65, 85, 0) 72%);
+      box-shadow: 0 0 8px rgba(51, 65, 85, 0.14);
+      animation: brandPulse 3.2s ease-in-out infinite;
+    }
+
+    .brand-caption,
+    .brand-question {
+      display: none;
+    }
+
+    .brand-link {
+      display: block;
+      color: #273244;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-decoration: none;
+      text-wrap: balance;
+    }
+
+    .brand-cta {
+      flex: 0 0 auto;
+      padding-right: max(0px, env(safe-area-inset-right, 0px));
+    }
+
+    .brand-cta a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 0 14px;
+      border-radius: 11px;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      color: #f8fafc;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0)),
+        #1f2937;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.14),
+        0 4px 12px rgba(15, 23, 42, 0.12);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .brand-cta a:hover {
+      transform: translateY(-1px);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0)),
+        #111827;
+    }
+
+    .brand-cta a[aria-disabled="true"] {
+      opacity: 0.48;
+      pointer-events: none;
+    }
+
+    @keyframes brandPulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.82;
+        box-shadow: 0 0 7px rgba(51, 65, 85, 0.12);
+      }
+      50% {
+        transform: scale(1.16);
+        opacity: 1;
+        box-shadow: 0 0 10px rgba(51, 65, 85, 0.2);
+      }
+    }
+
+    @media (max-width: 520px) {
+      .brand-footer {
+        padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+        gap: 10px;
+      }
+
+      .brand-link { font-size: 0.8rem; }
+
+      .brand-cta a {
+        min-height: 32px;
+        padding: 0 13px;
+        border-radius: 10px;
+        font-size: 0.76rem;
+      }
+    }
+
+    .picker-sheet {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 14px;
+      background: rgba(15, 23, 42, 0.22);
+      backdrop-filter: blur(12px);
+      z-index: 1001;
+    }
+
+    .picker-sheet.open {
+      display: flex;
+    }
+
+    .picker-card {
+      width: min(460px, 100%);
+      padding: 14px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
+    }
+
+    .picker-title {
+      margin-bottom: 12px;
+      font-size: 0.98rem;
+      font-weight: 800;
+      text-align: center;
+      color: var(--text);
+    }
+
+    .picker-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .picker-btn {
+      width: 100%;
+      min-height: 52px;
+      border: 0;
+      border-radius: 16px;
+      background: #f8fafc;
+      color: var(--text);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .picker-btn.primary {
+      background: linear-gradient(135deg, #111827, #334155);
+      color: #fff;
+    }
+
+    @media (min-width: 700px) {
+      .page-shell {
+        padding-top: 22px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .page-shell {
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+
+      .brand-footer {
+        width: calc(100% + 20px);
+        margin-left: -10px;
+      }
+
+      .app-bar,
+      .event-card,
+      .gallery-panel {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .feed {
+        gap: 10px;
+      }
+
+      .wheel-wrap {
+        width: min(100%, 274px);
+      }
+
+      .summary-copy h1 {
+        font-size: 3rem;
+      }
+
+      .fab-upload {
+        right: 12px;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 66px);
+        min-width: 132px;
+        min-height: 46px;
+        padding: 0 17px;
+        gap: 10px;
+        font-size: 0.86rem;
+      }
+
+      .fab-upload::before {
+        width: 21px;
+        height: 21px;
+        font-size: 13px;
+      }
+
+      .wheel-popup {
+        padding: 10px;
+      }
+
+      .wheel-popup-card {
+        padding: 16px 14px 18px;
+        border-radius: 24px;
+      }
+
+      .wheel-popup-head {
+        margin-bottom: 14px;
+      }
+
+      .wheel-popup-copy h3 {
+        font-size: 1.02rem;
+      }
+
+      .wheel-popup-copy p {
+        font-size: 0.84rem;
+      }
+
+      .wheel-card {
+        gap: 14px;
+      }
+
+      .wheel-controls {
+        margin-top: 10px;
+        gap: 10px;
+      }
+
+      .wheel-result {
+        padding: 12px 14px;
+      }
+
+      .wheel-upload-primary,
+      .wheel-upload-secondary {
+        min-height: 46px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <h3>Compartir recuerdo</h3>
+      <p class="modal-copy">Tu foto aparecerá en la galería al instante.</p>
+
+      <input type="text" id="modalName" placeholder="Tu nombre">
+      <textarea id="modalMessage" placeholder="Escribe una dedicatoria opcional"></textarea>
+
+      <label class="anon">
+        <input type="checkbox" id="modalAnon">
+        Subir como anónimo
+      </label>
+
+      <button id="confirmUpload">Subir foto</button>
+    </div>
+  </div>
+
+  <div id="adminModal" class="admin-modal">
+    <div class="admin-card">
+      <div class="admin-head">
+        <div>
+          <span>Panel oculto</span>
+          <h3>Administrar fotos</h3>
+        </div>
+        <button type="button" id="adminClose" class="admin-close" aria-label="Cerrar panel">×</button>
+      </div>
+
+      <div class="admin-body">
+        <section id="adminAuth" class="admin-auth show">
+          <p class="modal-copy">Ingresa con tus datos para revisar y borrar fotos del evento actual.</p>
+          <input type="text" id="adminUser" placeholder="Usuario" autocomplete="username">
+          <input type="password" id="adminPass" placeholder="Clave" autocomplete="current-password">
+          <button type="button" id="adminLogin">Entrar al panel</button>
+          <div id="adminLoginError" class="admin-login-error" aria-live="polite"></div>
+        </section>
+
+        <section id="adminPanel" class="admin-panel">
+          <div class="admin-event-tag">Evento activo: <strong id="adminEventLabel"></strong></div>
+          <div id="adminList" class="admin-list"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div id="clientDownloadModal" class="admin-modal">
+    <div class="admin-card client-download-card">
+      <div class="admin-head">
+        <div>
+          <span>Acceso del cliente</span>
+          <h3>Descargar álbum</h3>
+        </div>
+        <button type="button" id="clientDownloadClose" class="admin-close" aria-label="Cerrar descarga">×</button>
+      </div>
+      <div class="admin-body">
+        <section id="clientDownloadAuth" class="admin-auth client-download-auth show">
+          <p class="modal-copy">Ingresa los datos asignados para descargar el contenido completo del evento.</p>
+          <input type="text" id="clientDownloadUser" placeholder="Usuario" autocomplete="username">
+          <input type="password" id="clientDownloadPass" placeholder="Contraseña" autocomplete="current-password">
+          <button type="button" id="clientDownloadLogin">Continuar</button>
+          <div id="clientDownloadError" class="admin-login-error" aria-live="polite"></div>
+        </section>
+        <section id="clientDownloadPanel" class="admin-panel client-download-panel">
+          <div class="client-download-summary">
+            <div class="client-download-event">
+              <span>Evento</span>
+              <strong id="clientDownloadEvent"></strong>
+            </div>
+            <div class="client-download-event">
+              <span>Contenido disponible</span>
+              <strong id="clientDownloadCount"></strong>
+            </div>
+            <button type="button" id="clientDownloadButton" class="client-download-button">Descargar álbum</button>
+            <div id="clientDownloadStatus" class="client-download-status" aria-live="polite"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewer">
+    <span id="closeViewer">✕</span>
+    <div id="counter"></div>
+    <div class="nav left" onclick="prevImage()">‹</div>
+    <div class="nav right" onclick="nextImage()">›</div>
+    <img id="viewerImg" alt="Foto ampliada de la galería">
+    <div id="viewerName" class="viewer-name-pill"></div>
+    <button id="viewerNoteTrigger" class="viewer-note-trigger" type="button" aria-label="Ver dedicatoria"></button>
+    <div id="viewerDedication" class="viewer-note-overlay">
+      <div class="viewer-note-head">
+        <div id="viewerOverlayName" class="viewer-note-name"></div>
+        <button id="viewerNoteClose" class="viewer-note-close" type="button">×</button>
+      </div>
+      <div id="viewerMessage" class="viewer-message"></div>
+    </div>
+  </div>
+
+  <main class="page-shell">
+    <div class="app-frame">
+      <header class="app-bar">
+        <div class="app-title">
+          <div class="app-icon">S</div>
+          <div>
+            <span>Álbum digital</span>
+            <strong>Sofia XV</strong>
+          </div>
+        </div>
+        <div class="status-pill">En vivo</div>
+      </header>
+
+      <section class="summary-card">
+        <div class="summary-cover">
+          <span class="summary-badge">Álbum</span>
+          <span class="summary-date">15 Ago 2026</span>
+          <div class="summary-copy">
+            <h1>Sofia XV</h1>
+            <p>Los recuerdos de una noche especial.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-stack">
+        <button type="button" id="openWheel" class="challenge-entry">
+          <div class="challenge-entry-copy">
+            <span>Idea De Foto</span>
+            <h3>¿No sabes qué subir? Toca aquí</h3>
+            <p>La ruleta te da una idea al instante.</p>
+          </div>
+          <div class="challenge-entry-icon">✦</div>
+        </button>
+
+        <section class="gallery-panel">
+          <div class="section-head">
+            <div>
+              <span>Galería</span>
+              <h3>Recuerdos del evento</h3>
+            </div>
+            <div class="section-action">
+              <button type="button" id="openProjector" class="projector-btn">Proyectar</button>
+            </div>
+          </div>
+
+          <section class="feed"></section>
+        </section>
+      </section>
+
+      <footer class="brand-footer">
+        <div class="brand-copy">
+          <p class="brand-caption">Álbum creado con amor digital</p>
+          <a class="brand-link" href="https://www.facebook.com/people/Digital-Invita/61587804296779/" target="_blank" rel="noopener noreferrer">Creado por Digital Invita</a>
+          <p class="brand-question">Álbumes digitales para eventos</p>
+        </div>
+        <div class="brand-cta">
+          <a href="https://wa.me/525550591264?text=Hola%2C%20quiero%20informaci%C3%B3n%20acerca%20del%20%C3%A1lbum%20digital." target="_blank" rel="noopener noreferrer">Contáctanos</a>
+        </div>
+      </footer>
+    </div>
+  </main>
+
+  <button type="button" class="fab-upload">
+    <div>Subir foto</div>
+  </button>
+
+  <div id="pickerSheet" class="picker-sheet">
+    <div class="picker-card">
+      <div class="picker-title">Selecciona una opción</div>
+      <div class="picker-actions">
+        <button type="button" class="picker-btn primary" id="openCamera">Tomar foto</button>
+        <button type="button" class="picker-btn" id="openGallery">Elegir de galería</button>
+        <button type="button" class="picker-btn" id="closePicker">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="wheelPopup" class="wheel-popup">
+    <div class="wheel-popup-card">
+      <div class="wheel-popup-head">
+        <div class="wheel-popup-copy">
+          <span>Reto De Foto</span>
+          <h3>Gira y deja que la suerte te diga qué subir</h3>
+          <p>Cuando te toque una idea, puedes ir directo a subir tu foto.</p>
+        </div>
+        <button type="button" id="closeWheel" class="wheel-popup-close">×</button>
+      </div>
+
+      <div class="wheel-card-frame">
+        <div class="wheel-card">
+          <div class="wheel-wrap">
+            <div class="wheel-pointer"></div>
+            <div id="photoWheel" class="wheel">
+              <ul id="wheelLabels" class="wheel-labels"></ul>
+            </div>
+          </div>
+
+          <div class="wheel-controls">
+            <button type="button" id="spinWheel" class="wheel-button">Girar ruleta</button>
+            <div id="wheelResult" class="wheel-result">
+              <strong>Idea</strong>
+              Toca la ruleta y descubre tu próxima foto.
+            </div>
+            <div id="wheelUploadActions" class="wheel-upload-actions">
+              <button type="button" id="wheelTakePhoto" class="wheel-upload-primary">Tomar foto ahora</button>
+              <button type="button" id="wheelPickPhoto" class="wheel-upload-secondary">Elegir de galería</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="projector" class="projector">
+    <div class="projector-shell">
+      <div class="projector-topbar">
+        <button type="button" id="projectorToggle" class="projector-control" aria-label="Pausar proyección"><span class="projector-icon-pause" aria-hidden="true"></span></button>
+        <button type="button" id="closeProjector" class="projector-control"><span>×</span></button>
+      </div>
+
+      <div class="projector-stage">
+        <img id="projectorImg" class="projector-photo" alt="Foto en proyección">
+      </div>
+
+      <div class="projector-meta">
+        <div id="projectorByline" class="projector-byline">Proyección en vivo</div>
+        <div id="projectorName" class="projector-name"></div>
+        <div id="projectorMessage" class="projector-message"></div>
+      </div>
+
+      <div id="projectorCounter" class="projector-counter"></div>
+    </div>
+  </div>
+
+  <input type="file" accept="image/*" capture="environment" id="uploadCamera" hidden>
+  <input type="file" accept="image/*" id="uploadGallery" hidden>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script id="albumConfig" type="application/json">
+{
+  "eventId": "xv-maia",
+  "publicUrl": "",
+  "invitationTitle": "Álbum digital",
+  "invitationCopy": "Comparte tus fotos y revive los mejores momentos de este día.",
+  "invitationButtonLabel": "Abrir álbum digital",
+  "eventName": "XV Maia",
+  "pageTitle": "Álbum Digital | Maia Xv",
+  "appInitial": "M",
+  "appLabel": "Álbum digital",
+  "liveLabel": "En vivo",
+  "coverImage": "media/AP2.jpg",
+  "coverBadge": "Álbum",
+  "dateLabel": "12 Sep 2026",
+  "coverText": "Los recuerdos de este día especial.",
+  "galleryEyebrow": "Galería",
+  "galleryTitle": "Recuerdos del evento",
+  "projectorLabel": "Proyectar",
+  "uploadLabel": "Subir foto",
+  "challengeEyebrow": "Idea de foto",
+  "challengeTitle": "¿No sabes qué subir? Toca aquí",
+  "challengeText": "La ruleta te da una idea al instante.",
+  "wheelEyebrow": "Reto de foto",
+  "wheelTitle": "Gira y deja que la suerte te diga qué subir",
+  "wheelText": "Cuando te toque una idea, puedes ir directo a subir tu foto.",
+  "wheelButton": "Girar ruleta",
+  "wheelIdleTitle": "Idea",
+  "wheelIdleText": "Toca la ruleta y descubre tu próxima foto.",
+  "wheelResultTitle": "Te tocó",
+  "wheelOptions": [
+    {
+      "label": "Spot bonito",
+      "description": "Busca un rincón con buena decoración, luces o fondo padre."
+    },
+    {
+      "label": "Con la festejada",
+      "description": "Tu foto con la protagonista del evento, sencilla y especial."
+    },
+    {
+      "label": "Con tus acompañantes",
+      "description": "Con quien vengas: pareja, amigos o familia."
+    },
+    {
+      "label": "Entre amigos",
+      "description": "Con tu grupo, en modo relajado o divertido."
+    },
+    {
+      "label": "Foto natural",
+      "description": "Una sonrisa real, sin posar; solo disfrutando el momento."
+    },
+    {
+      "label": "Con algún detalle",
+      "description": "Bebidas, luces o decoración que hagan más especial la foto."
+    },
+    {
+      "label": "Foto creativa",
+      "description": "Algo diferente: brindando, riendo o posando fuera de lo típico."
+    }
+  ],
+  "footerCaption": "Álbum creado con amor digital",
+  "footerBrand": "Creado por Digital Invita",
+  "footerText": "Invitaciones y experiencias digitales para tus eventos.",
+  "footerCtaLabel": "Contáctanos",
+  "facebookUrl": "https://www.facebook.com/people/Digital-Invita/61587804296779/",
+  "whatsappUrl": "https://wa.me/525550591264?text=Hola%2C%20quiero%20informaci%C3%B3n%20acerca%20del%20%C3%A1lbum%20digital.",
+  "firebase": {
+    "apiKey": "AIzaSyBQTeEhNmzK-zls5oe6sRAEyC05WBIYX40",
+    "authDomain": "album-digital-invita.firebaseapp.com",
+    "projectId": "album-digital-invita",
+    "storageBucket": "album-digital-invita.firebasestorage.app",
+    "messagingSenderId": "238056287053",
+    "appId": "1:238056287053:web:5ac86d483d4ede1016a504"
+  },
+  "admin": {
+    "email": "",
+    "uid": "",
+    "userHash": "b512d97e7cbf97c273e4db073bbb547aa65a84589227f8f3d9e4a72b9372a24d",
+    "passHash": "e6c3b6f798b0e8d63406a281cf31ed72a005f9aaba8970ba3d008f2254001146"
+  },
+  "clientDownload": {
+    "userHash": "c87227defffb3bf9da7329d97a16d1e822c9b337b47b22fe70e5c237d4fd096c",
+    "passHash": "5bc000f84b0fd5428d62d0d7a86dc5f42f7583228dd9acb96c4f68da3370a3dd"
+  }
+}
+  </script>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <script>
+    function readAlbumConfig() {
+      try {
+        return JSON.parse(document.getElementById("albumConfig")?.textContent || "{}");
+      } catch (error) {
+        console.error("No se pudo leer la configuración del álbum.", error);
+        return {};
+      }
+    }
+
+    const albumConfig = readAlbumConfig();
+    const albumParams = new URLSearchParams(window.location.search);
+    const albumPreviewMode = albumParams.get("preview") === "1";
+    const viewer = document.getElementById("viewer");
+    let isDragging = false;
+    let startXPan = 0;
+    let startYPan = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let lastTap = 0;
+    let zoomed = false;
+    let startX = 0;
+    let galleryImages = [];
+    let previewGalleryItems = [];
+    let currentIndex = 0;
+    let tempFile = null;
+    let isSwiping = false;
+    const flipTimers = new WeakMap();
+    const flipIntervals = new WeakMap();
+    let viewerAnimationFrame = 0;
+    let pendingViewerTransform = null;
+    let pendingViewerOpacity = null;
+
+    const firebaseConfig = albumConfig.firebase || {};
+    const hasFirebaseConfig = ["apiKey", "authDomain", "projectId", "storageBucket", "appId"]
+      .every((key) => String(firebaseConfig[key] || "").trim());
+    const firebaseReady = !albumPreviewMode && hasFirebaseConfig && typeof firebase !== "undefined";
+    let storage = null;
+    let db = null;
+    let auth = null;
+
+    if (firebaseReady) {
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      storage = firebase.storage();
+      db = firebase.firestore();
+      auth = typeof firebase.auth === "function" ? firebase.auth() : null;
+    }
+
+    const fabUpload = document.querySelector(".fab-upload");
+    const openProjectorBtn = document.getElementById("openProjector");
+    const projector = document.getElementById("projector");
+    const projectorStage = document.querySelector(".projector-stage");
+    const projectorMeta = document.querySelector(".projector-meta");
+    const projectorImg = document.getElementById("projectorImg");
+    const projectorName = document.getElementById("projectorName");
+    const projectorMessage = document.getElementById("projectorMessage");
+    const projectorByline = document.getElementById("projectorByline");
+    const projectorCounter = document.getElementById("projectorCounter");
+    const projectorToggle = document.getElementById("projectorToggle");
+    const closeProjectorBtn = document.getElementById("closeProjector");
+    const pickerSheet = document.getElementById("pickerSheet");
+    const openWheelBtn = document.getElementById("openWheel");
+    const wheelPopup = document.getElementById("wheelPopup");
+    const wheelCardFrame = document.querySelector(".wheel-card-frame");
+    const wheelCard = document.querySelector(".wheel-card");
+    const wheelWrap = document.querySelector(".wheel-wrap");
+    const closeWheelBtn = document.getElementById("closeWheel");
+    const uploadCameraInput = document.getElementById("uploadCamera");
+    const uploadGalleryInput = document.getElementById("uploadGallery");
+    const openCameraBtn = document.getElementById("openCamera");
+    const openGalleryBtn = document.getElementById("openGallery");
+    const closePickerBtn = document.getElementById("closePicker");
+    const feed = document.querySelector(".feed");
+    const photoWheel = document.getElementById("photoWheel");
+    const wheelLabels = document.getElementById("wheelLabels");
+    const spinWheelBtn = document.getElementById("spinWheel");
+    const wheelResult = document.getElementById("wheelResult");
+    const wheelUploadActions = document.getElementById("wheelUploadActions");
+    const wheelTakePhoto = document.getElementById("wheelTakePhoto");
+    const wheelPickPhoto = document.getElementById("wheelPickPhoto");
+    const summaryCover = document.querySelector(".summary-cover");
+    const appIcon = document.querySelector(".app-icon");
+    const liveBadge = document.querySelector(".status-pill");
+    const anonCheckbox = document.getElementById("modalAnon");
+    const nameInput = document.getElementById("modalName");
+    const messageInput = document.getElementById("modalMessage");
+    const confirmBtn = document.getElementById("confirmUpload");
+    const modalCopy = document.querySelector(".modal-copy");
+    const viewerImg = document.getElementById("viewerImg");
+    const viewerName = document.getElementById("viewerName");
+    const viewerOverlayName = document.getElementById("viewerOverlayName");
+    const viewerDedication = document.getElementById("viewerDedication");
+    const viewerNoteTrigger = document.getElementById("viewerNoteTrigger");
+    const viewerNoteClose = document.getElementById("viewerNoteClose");
+    const modal = document.getElementById("modal");
+    const adminModal = document.getElementById("adminModal");
+    const adminAuth = document.getElementById("adminAuth");
+    const adminPanel = document.getElementById("adminPanel");
+    const adminClose = document.getElementById("adminClose");
+    const adminUser = document.getElementById("adminUser");
+    const adminPass = document.getElementById("adminPass");
+    const adminLogin = document.getElementById("adminLogin");
+    const adminLoginError = document.getElementById("adminLoginError");
+    const adminList = document.getElementById("adminList");
+    const adminEventLabel = document.getElementById("adminEventLabel");
+    const clientDownloadModal = document.getElementById("clientDownloadModal");
+    const clientDownloadClose = document.getElementById("clientDownloadClose");
+    const clientDownloadAuth = document.getElementById("clientDownloadAuth");
+    const clientDownloadPanel = document.getElementById("clientDownloadPanel");
+    const clientDownloadUser = document.getElementById("clientDownloadUser");
+    const clientDownloadPass = document.getElementById("clientDownloadPass");
+    const clientDownloadLogin = document.getElementById("clientDownloadLogin");
+    const clientDownloadError = document.getElementById("clientDownloadError");
+    const clientDownloadEvent = document.getElementById("clientDownloadEvent");
+    const clientDownloadCount = document.getElementById("clientDownloadCount");
+    const clientDownloadButton = document.getElementById("clientDownloadButton");
+    const clientDownloadStatus = document.getElementById("clientDownloadStatus");
+    const toast = document.getElementById("toast");
+    const eventoParam = albumParams.get("evento");
+    const eventoID = (eventoParam || albumConfig.eventId || "evento-digital")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "evento-digital";
+    let wheelOptions = Array.isArray(albumConfig.wheelOptions) && albumConfig.wheelOptions.length >= 2
+      ? albumConfig.wheelOptions.map((option, index) => ({
+        label: String(option?.label || `Idea ${index + 1}`),
+        description: String(option?.description || "")
+      }))
+      : [
+        { label: "Foto divertida", description: "Captura un momento espontáneo de la celebración." },
+        { label: "Con el festejado", description: "Tómate una foto especial con quien celebra." }
+      ];
+    let wheelRotation = 0;
+    let wheelSpinning = false;
+    let toastTimer = null;
+    let projectorIndex = 0;
+    let projectorInterval = null;
+    let projectorPlaying = true;
+    let projectorTimerInterval = null;
+    let projectorSlideStartedAt = 0;
+    const projectorDelay = 6000;
+    const wheelColors = ["#dbeafe", "#eff6ff", "#e0f2fe", "#f3f4f6", "#e9d5ff", "#fee2e2", "#dcfce7"];
+    const adminCredentialHashes = {
+      user: String(albumConfig.admin?.userHash || ""),
+      pass: String(albumConfig.admin?.passHash || "")
+    };
+    let adminAccessStep = 0;
+    let appIconTapCount = 0;
+    let liveBadgeTapCount = 0;
+    let adminSequenceTimer = null;
+    let adminUnlocked = false;
+    let clientCoverTapCount = 0;
+    let clientCoverTapTimer = null;
+
+    function setAlbumText(selector, value) {
+      const node = document.querySelector(selector);
+      if (node && value !== undefined && value !== null) node.textContent = String(value);
+    }
+
+    function escapeAlbumHtml(value) {
+      return String(value || "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+
+    function applyAlbumContent() {
+      document.title = albumConfig.pageTitle || `Álbum Digital | ${albumConfig.eventName || "Evento"}`;
+      const iconText = String(albumConfig.appInitial || String(albumConfig.eventName || "A").charAt(0))
+        .trim()
+        .slice(0, 4)
+        .toUpperCase();
+      setAlbumText(".app-icon", iconText);
+      appIcon.dataset.length = String(Math.max(1, iconText.length));
+      setAlbumText(".app-title span", albumConfig.appLabel || "Álbum digital");
+      setAlbumText(".app-title strong", albumConfig.eventName || "Nombre del evento");
+      setAlbumText(".status-pill", albumConfig.liveLabel || "En vivo");
+      setAlbumText(".summary-badge", albumConfig.coverBadge || "Álbum");
+      setAlbumText(".summary-date", albumConfig.dateLabel || "Fecha del evento");
+      setAlbumText(".summary-copy h1", albumConfig.eventName || "Nombre del evento");
+      setAlbumText(".summary-copy p", albumConfig.coverText || "Los recuerdos de un día especial.");
+      setAlbumText(".challenge-entry-copy span", albumConfig.challengeEyebrow || "Idea de foto");
+      setAlbumText(".challenge-entry-copy h3", albumConfig.challengeTitle || "¿No sabes qué subir?");
+      setAlbumText(".challenge-entry-copy p", albumConfig.challengeText || "La ruleta te da una idea al instante.");
+      setAlbumText(".gallery-panel .section-head span", albumConfig.galleryEyebrow || "Galería");
+      setAlbumText(".gallery-panel .section-head h3", albumConfig.galleryTitle || "Recuerdos del evento");
+      setAlbumText("#openProjector", albumConfig.projectorLabel || "Proyectar");
+      setAlbumText(".fab-upload div", albumConfig.uploadLabel || "Subir foto");
+      setAlbumText(".wheel-popup-copy span", albumConfig.wheelEyebrow || "Reto de foto");
+      setAlbumText(".wheel-popup-copy h3", albumConfig.wheelTitle || "Gira la ruleta");
+      setAlbumText(".wheel-popup-copy p", albumConfig.wheelText || "Descubre tu próxima foto.");
+      setAlbumText("#spinWheel", albumConfig.wheelButton || "Girar ruleta");
+      setAlbumText(".brand-caption", albumConfig.footerCaption || "Álbum creado con amor digital");
+      setAlbumText(".brand-link", albumConfig.footerBrand || "Creado por Digital Invita");
+      setAlbumText(".brand-question", albumConfig.footerText || "Álbumes digitales para eventos");
+      setAlbumText(".brand-cta a", albumConfig.footerCtaLabel || "Contáctanos");
+
+      const coverImage = String(albumConfig.coverImage || "").trim();
+      document.documentElement.style.setProperty("--album-cover-image", coverImage ? `url(${JSON.stringify(coverImage)})` : "none");
+
+      const footerBrandLink = document.querySelector(".brand-link");
+      if (footerBrandLink) footerBrandLink.href = albumConfig.facebookUrl || "#";
+      const whatsappLink = document.querySelector(".brand-cta a");
+      if (whatsappLink) {
+        whatsappLink.href = albumConfig.whatsappUrl || "#";
+        whatsappLink.setAttribute("aria-disabled", albumConfig.whatsappUrl ? "false" : "true");
+      }
+    }
+
+    function applyAlbumPreviewConfig(nextConfig) {
+      if (!nextConfig || typeof nextConfig !== "object") return;
+      Object.keys(albumConfig).forEach((key) => delete albumConfig[key]);
+      Object.assign(albumConfig, nextConfig);
+      if (Array.isArray(albumConfig.wheelOptions) && albumConfig.wheelOptions.length >= 2) {
+        wheelOptions = albumConfig.wheelOptions.map((option, index) => ({
+          label: String(option?.label || `Idea ${index + 1}`),
+          description: String(option?.description || "")
+        }));
+      }
+      applyAlbumContent();
+      renderWheelBackground();
+      renderWheelLabels();
+      resetWheelState();
+      if (albumPreviewMode) renderAlbumPreviewGallery();
+    }
+
+    window.addEventListener("message", (event) => {
+      if (event.data?.type === "digital-invita-album-config") {
+        applyAlbumPreviewConfig(event.data.config);
+      }
+    });
+
+    function resetAdminSequence() {
+      adminAccessStep = 0;
+      appIconTapCount = 0;
+      liveBadgeTapCount = 0;
+      clearTimeout(adminSequenceTimer);
+      adminSequenceTimer = null;
+    }
+
+    function armAdminSequenceReset() {
+      clearTimeout(adminSequenceTimer);
+      adminSequenceTimer = setTimeout(() => {
+        resetAdminSequence();
+      }, 5000);
+    }
+
+    function openAdminModal() {
+      if (albumPreviewMode) adminUnlocked = true;
+      adminModal.classList.add("open");
+      document.body.classList.add("overlay-open");
+      adminEventLabel.textContent = eventoID;
+      if (adminUnlocked) {
+        adminAuth.classList.remove("show");
+        adminPanel.classList.add("show");
+        renderAdminList();
+      } else {
+        adminAuth.classList.add("show");
+        adminPanel.classList.remove("show");
+        adminUser.focus();
+      }
+    }
+
+    function closeAdminModal() {
+      adminModal.classList.remove("open");
+      if (!wheelPopup.classList.contains("open") && !projector.classList.contains("open")) {
+        document.body.classList.remove("overlay-open");
+      }
+      adminLoginError.textContent = "";
+      adminUser.value = "";
+      adminPass.value = "";
+      adminUnlocked = false;
+      if (auth?.currentUser) auth.signOut().catch(() => {});
+      resetAdminSequence();
+    }
+
+    function resetClientDownloadGesture() {
+      clientCoverTapCount = 0;
+      clearTimeout(clientCoverTapTimer);
+      clientCoverTapTimer = null;
+    }
+
+    function openClientDownloadModal() {
+      resetClientDownloadGesture();
+      clientDownloadModal.classList.add("open");
+      document.body.classList.add("overlay-open");
+      clientDownloadAuth.classList.add("show");
+      clientDownloadPanel.classList.remove("show");
+      clientDownloadUser.value = "";
+      clientDownloadPass.value = "";
+      clientDownloadError.textContent = "";
+      clientDownloadStatus.textContent = "";
+      clientDownloadLogin.disabled = false;
+      clientDownloadEvent.textContent = albumConfig.eventName || eventoID;
+      clientDownloadCount.textContent = `${galleryImages.length} ${galleryImages.length === 1 ? "fotografía" : "fotografías"}`;
+      setTimeout(() => clientDownloadUser.focus(), 80);
+    }
+
+    function closeClientDownloadModal() {
+      clientDownloadModal.classList.remove("open");
+      clientDownloadAuth.classList.add("show");
+      clientDownloadPanel.classList.remove("show");
+      clientDownloadUser.value = "";
+      clientDownloadPass.value = "";
+      clientDownloadError.textContent = "";
+      clientDownloadStatus.textContent = "";
+      clientDownloadButton.disabled = false;
+      clientDownloadButton.textContent = "Descargar álbum";
+      if (!wheelPopup.classList.contains("open") && !projector.classList.contains("open") && !adminModal.classList.contains("open")) {
+        document.body.classList.remove("overlay-open");
+      }
+    }
+
+    function renderAdminList() {
+      adminEventLabel.textContent = eventoID;
+      adminList.innerHTML = "";
+
+      if (!galleryImages.length) {
+        adminList.innerHTML = "<div class='admin-empty'>Aún no hay fotos en este evento.</div>";
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+
+      galleryImages.forEach((item) => {
+        const row = document.createElement("article");
+        row.className = "admin-item";
+
+        const thumb = document.createElement("img");
+        thumb.className = "admin-thumb";
+        thumb.src = item.image;
+        thumb.alt = item.name ? `Foto compartida por ${item.name}` : "Foto compartida";
+        thumb.loading = "lazy";
+        thumb.decoding = "async";
+
+        const copy = document.createElement("div");
+        const name = document.createElement("strong");
+        name.textContent = item.name || "Anónimo";
+        const text = document.createElement("span");
+        text.textContent = item.message || "Sin dedicatoria";
+        copy.appendChild(name);
+        copy.appendChild(text);
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "admin-delete";
+        removeBtn.textContent = "Borrar";
+        removeBtn.addEventListener("click", async () => {
+          if (!item.id || removeBtn.disabled) return;
+
+          if (albumPreviewMode) {
+            const confirmed = window.confirm("¿Quieres borrar esta foto de la vista previa?");
+            if (!confirmed) return;
+
+            const previewIndex = previewGalleryItems.findIndex((previewItem) => previewItem.id === item.id);
+            if (previewIndex >= 0) {
+              const [removedItem] = previewGalleryItems.splice(previewIndex, 1);
+              if (String(removedItem?.image || "").startsWith("blob:")) {
+                URL.revokeObjectURL(removedItem.image);
+              }
+            }
+
+            renderAlbumPreviewGallery();
+            renderAdminList();
+            showToast("Foto eliminada de la vista previa");
+            return;
+          }
+
+          if (!firebaseReady || !storage || !db) {
+            showToast("Conecta Firebase para administrar fotos");
+            return;
+          }
+
+          const confirmed = window.confirm("¿Quieres borrar esta foto del evento?");
+          if (!confirmed) return;
+
+          removeBtn.disabled = true;
+          removeBtn.textContent = "Borrando...";
+
+          try {
+            try {
+              await storage.refFromURL(item.image).delete();
+            } catch (storageError) {
+              console.warn("No se pudo borrar el archivo en Storage", storageError);
+            }
+
+            await db.collection("galeria")
+              .doc(eventoID)
+              .collection("fotos")
+              .doc(item.id)
+              .delete();
+
+            showToast("Foto borrada");
+          } catch (error) {
+            console.error(error);
+            removeBtn.disabled = false;
+            removeBtn.textContent = "Borrar";
+            showToast("No se pudo borrar la foto");
+          }
+        });
+
+        row.appendChild(thumb);
+        row.appendChild(copy);
+        row.appendChild(removeBtn);
+        fragment.appendChild(row);
+      });
+
+      adminList.appendChild(fragment);
+    }
+
+    async function sha256(text) {
+      const buffer = await crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(text)
+      );
+
+      return Array.from(new Uint8Array(buffer))
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join("");
+    }
+
+    function sanitizeArchiveName(value, fallback = "invitado") {
+      const clean = String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[<>:"/\\|?*\u0000-\u001f]+/g, "-")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/[. ]+$/g, "")
+        .slice(0, 70);
+      return clean || fallback;
+    }
+
+    function archiveCsvCell(value) {
+      return `"${String(value ?? "").replace(/"/g, '""')}"`;
+    }
+
+    function archiveExtension(contentType, url) {
+      const type = String(contentType || "").toLowerCase();
+      if (type.includes("png")) return "png";
+      if (type.includes("webp")) return "webp";
+      if (type.includes("gif")) return "gif";
+      if (type.includes("heic") || type.includes("heif")) return "heic";
+      if (type.includes("jpeg") || type.includes("jpg")) return "jpg";
+      const pathMatch = String(url || "").split("?")[0].match(/\.([a-z0-9]{2,5})$/i);
+      return pathMatch ? pathMatch[1].toLowerCase() : "jpg";
+    }
+
+    function downloadClientBlob(blob, fileName) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1800);
+    }
+
+    function clientZipU16(value) {
+      return new Uint8Array([value & 255, (value >>> 8) & 255]);
+    }
+
+    function clientZipU32(value) {
+      return new Uint8Array([value & 255, (value >>> 8) & 255, (value >>> 16) & 255, (value >>> 24) & 255]);
+    }
+
+    function concatClientZipParts(...parts) {
+      const output = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
+      let outputOffset = 0;
+      parts.forEach((part) => {
+        output.set(part, outputOffset);
+        outputOffset += part.length;
+      });
+      return output;
+    }
+
+    function clientZipCrc32(bytes) {
+      let crc = 0xffffffff;
+      for (const byte of bytes) {
+        crc ^= byte;
+        for (let bit = 0; bit < 8; bit += 1) {
+          crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
+        }
+      }
+      return (crc ^ 0xffffffff) >>> 0;
+    }
+
+    function buildClientZip(files) {
+      const encoder = new TextEncoder();
+      const localParts = [];
+      const centralParts = [];
+      let zipOffset = 0;
+
+      files.forEach((file) => {
+        const name = encoder.encode(file.path);
+        const data = file.data instanceof Uint8Array ? file.data : encoder.encode(String(file.data));
+        const crc = clientZipCrc32(data);
+        const localHeader = concatClientZipParts(
+          clientZipU32(0x04034b50), clientZipU16(20), clientZipU16(0), clientZipU16(0), clientZipU16(0), clientZipU16(0),
+          clientZipU32(crc), clientZipU32(data.length), clientZipU32(data.length), clientZipU16(name.length), clientZipU16(0), name, data
+        );
+        localParts.push(localHeader);
+        centralParts.push(concatClientZipParts(
+          clientZipU32(0x02014b50), clientZipU16(20), clientZipU16(20), clientZipU16(0), clientZipU16(0), clientZipU16(0), clientZipU16(0),
+          clientZipU32(crc), clientZipU32(data.length), clientZipU32(data.length), clientZipU16(name.length), clientZipU16(0), clientZipU16(0),
+          clientZipU16(0), clientZipU16(0), clientZipU32(0), clientZipU32(zipOffset), name
+        ));
+        zipOffset += localHeader.length;
+      });
+
+      const local = concatClientZipParts(...localParts);
+      const central = concatClientZipParts(...centralParts);
+      const end = concatClientZipParts(
+        clientZipU32(0x06054b50), clientZipU16(0), clientZipU16(0), clientZipU16(files.length), clientZipU16(files.length),
+        clientZipU32(central.length), clientZipU32(local.length), clientZipU16(0)
+      );
+      return concatClientZipParts(local, central, end);
+    }
+
+    async function downloadClientAlbum() {
+      const items = galleryImages.slice();
+      if (!items.length) {
+        clientDownloadStatus.textContent = "Aún no hay fotografías para descargar.";
+        return;
+      }
+
+      clientDownloadButton.disabled = true;
+      clientDownloadButton.textContent = "Preparando...";
+      clientDownloadStatus.textContent = `Preparando 0 de ${items.length} fotografías`;
+
+      const files = [];
+      const exportedPhotos = [];
+      const failedPhotos = [];
+      const csvRows = [["Número", "Nombre", "Dedicatoria", "Archivo"]];
+
+      for (let index = 0; index < items.length; index += 1) {
+        const item = items[index];
+        clientDownloadStatus.textContent = `Preparando ${index + 1} de ${items.length} fotografías`;
+        try {
+          const response = await fetch(item.image, { cache: "no-store" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const blob = await response.blob();
+          const extension = archiveExtension(blob.type, item.image);
+          const number = String(index + 1).padStart(3, "0");
+          const guestName = sanitizeArchiveName(item.name, "invitado");
+          const archivePath = `fotos/${number}-${guestName}.${extension}`;
+          files.push({ path: archivePath, data: new Uint8Array(await blob.arrayBuffer()) });
+          csvRows.push([index + 1, item.name || "Invitado", item.message || "", archivePath]);
+          exportedPhotos.push({
+            number: index + 1,
+            name: item.name || "Invitado",
+            dedication: item.message || "",
+            file: archivePath,
+            originalUrl: item.image,
+            createdAt: item.createdAt || ""
+          });
+        } catch (error) {
+          failedPhotos.push({ number: index + 1, name: item.name || "Invitado", url: item.image, error: error?.message || "No disponible" });
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      if (!exportedPhotos.length) {
+        clientDownloadButton.disabled = false;
+        clientDownloadButton.textContent = "Descargar álbum";
+        clientDownloadStatus.textContent = "No fue posible recuperar las fotografías.";
+        return;
+      }
+
+      const generatedAt = new Date().toISOString();
+      const metadata = {
+        eventName: albumConfig.eventName || eventoID,
+        eventId: eventoID,
+        generatedAt,
+        downloadedPhotos: exportedPhotos.length,
+        failedPhotos: failedPhotos.length,
+        photos: exportedPhotos,
+        errors: failedPhotos
+      };
+      const csv = `\ufeff${csvRows.map((row) => row.map(archiveCsvCell).join(",")).join("\r\n")}`;
+      const readme = [
+        `Álbum: ${albumConfig.eventName || eventoID}`,
+        `Evento: ${eventoID}`,
+        `Fecha de descarga: ${generatedAt}`,
+        `Fotografías incluidas: ${exportedPhotos.length}`,
+        `Fotografías no disponibles: ${failedPhotos.length}`,
+        "",
+        "La carpeta fotos contiene las imágenes del evento.",
+        "dedicatorias.csv contiene los nombres y mensajes para abrirlos en Excel.",
+        "datos-del-album.json conserva el respaldo estructurado de la descarga."
+      ].join("\r\n");
+
+      files.push({ path: "dedicatorias.csv", data: csv });
+      files.push({ path: "datos-del-album.json", data: JSON.stringify(metadata, null, 2) });
+      files.push({ path: "LEEME.txt", data: readme });
+      if (failedPhotos.length) {
+        files.push({ path: "fotos-no-disponibles.json", data: JSON.stringify(failedPhotos, null, 2) });
+      }
+
+      clientDownloadStatus.textContent = "Generando archivo ZIP...";
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      const zip = buildClientZip(files);
+      const archiveName = `album-${sanitizeArchiveName(eventoID, "evento")}.zip`;
+      downloadClientBlob(new Blob([zip], { type: "application/zip" }), archiveName);
+      clientDownloadButton.disabled = false;
+      clientDownloadButton.textContent = "Descargar nuevamente";
+      clientDownloadStatus.textContent = `Descarga lista: ${exportedPhotos.length} ${exportedPhotos.length === 1 ? "fotografía" : "fotografías"}`;
+      showToast("Álbum preparado para descargar");
+    }
+
+    function renderWheelBackground() {
+      const slice = 360 / wheelOptions.length;
+      const startOffset = -slice / 2;
+      const gradientParts = wheelOptions.map((_, index) => {
+        const start = index * slice;
+        const end = start + slice;
+        const color = wheelColors[index % wheelColors.length];
+        return `${color} ${start}deg ${end}deg`;
+      });
+
+      photoWheel.style.background = `conic-gradient(from ${startOffset}deg, ${gradientParts.join(", ")})`;
+    }
+
+    function renderWheelLabels() {
+      const slice = 360 / wheelOptions.length;
+      wheelLabels.innerHTML = "";
+
+      wheelOptions.forEach((option, index) => {
+        const item = document.createElement("li");
+        item.className = "wheel-label";
+
+        const text = document.createElement("span");
+        text.textContent = option.label;
+        const angleDeg = index * slice;
+        const angleRad = (angleDeg * Math.PI) / 180;
+        const radius = 98;
+        const x = Math.sin(angleRad) * radius;
+        const y = -Math.cos(angleRad) * radius;
+
+        item.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${angleDeg - 90}deg)`;
+        text.style.transform = "none";
+
+        item.appendChild(text);
+        wheelLabels.appendChild(item);
+      });
+    }
+
+    function getWheelResultFromRotation() {
+      const slice = 360 / wheelOptions.length;
+      const normalizedRotation = ((wheelRotation % 360) + 360) % 360;
+      const pointerAngle = (360 - normalizedRotation) % 360;
+      const landedIndex = Math.floor((pointerAngle + slice / 2) / slice) % wheelOptions.length;
+      return {
+        index: landedIndex,
+        option: wheelOptions[landedIndex]
+      };
+    }
+
+    anonCheckbox.addEventListener("change", () => {
+      if (anonCheckbox.checked) {
+        nameInput.value = "";
+        nameInput.disabled = true;
+        nameInput.placeholder = "Anónimo";
+      } else {
+        nameInput.disabled = false;
+        nameInput.placeholder = "Tu nombre";
+      }
+    });
+
+    function updateCounter() {
+      const counter = document.getElementById("counter");
+      counter.innerText = galleryImages.length ? `${currentIndex + 1} / ${galleryImages.length}` : "0 / 0";
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2400);
+    }
+
+    function applyViewerStyles() {
+      viewerAnimationFrame = 0;
+
+      if (pendingViewerTransform !== null) {
+        viewerImg.style.transform = pendingViewerTransform;
+      }
+
+      if (pendingViewerOpacity !== null) {
+        viewerImg.style.opacity = pendingViewerOpacity;
+      }
+    }
+
+    function scheduleViewerStyles(transform, opacity) {
+      pendingViewerTransform = transform;
+      pendingViewerOpacity = opacity;
+
+      if (viewerAnimationFrame) return;
+
+      viewerAnimationFrame = requestAnimationFrame(applyViewerStyles);
+    }
+
+    function cancelViewerFrame() {
+      if (!viewerAnimationFrame) return;
+      cancelAnimationFrame(viewerAnimationFrame);
+      viewerAnimationFrame = 0;
+    }
+
+    function preloadViewerNeighbors(index) {
+      [index - 1, index + 1].forEach((targetIndex) => {
+        const item = galleryImages[targetIndex];
+        if (!item) return;
+        const preloadImage = new Image();
+        preloadImage.decoding = "async";
+        preloadImage.src = item.image;
+      });
+    }
+
+    function closeWheelPopup() {
+      wheelPopup.classList.remove("open");
+      wheelPopup.classList.remove("is-compact");
+      wheelPopup.classList.remove("has-result");
+      wheelCard.style.setProperty("--wheel-card-scale", "1");
+      wheelCardFrame.style.setProperty("--wheel-card-height", "auto");
+      document.body.classList.remove("overlay-open");
+      wheelResult.classList.remove("highlight");
+      wheelUploadActions.classList.remove("show");
+    }
+
+    function resetWheelState() {
+      wheelPopup.classList.remove("has-result");
+      wheelResult.classList.remove("highlight");
+      wheelUploadActions.classList.remove("show");
+      wheelResult.innerHTML = `<strong>${escapeAlbumHtml(albumConfig.wheelIdleTitle || "Idea")}</strong>${escapeAlbumHtml(albumConfig.wheelIdleText || "Toca la ruleta y descubre tu próxima foto.")}`;
+    }
+
+    function adjustWheelPopupLayout() {
+      if (!wheelPopup.classList.contains("open")) return;
+
+      wheelPopup.classList.remove("is-compact");
+      wheelCard.style.setProperty("--wheel-card-scale", "1");
+      wheelCardFrame.style.setProperty("--wheel-card-height", "auto");
+
+      requestAnimationFrame(() => {
+        const popupCard = wheelPopup.querySelector(".wheel-popup-card");
+        if (!popupCard) return;
+
+        const availableHeight = Math.max(300, window.innerHeight - 34);
+        const needsCompact = popupCard.scrollHeight > availableHeight;
+        wheelPopup.classList.toggle("is-compact", needsCompact);
+
+        requestAnimationFrame(() => {
+          const compactHeight = popupCard.scrollHeight;
+          const fitScale = Math.min(1, availableHeight / compactHeight);
+          const extraOffset = wheelPopup.classList.contains("has-result") ? 0.06 : 0.03;
+          const minimumScale = wheelPopup.classList.contains("has-result") ? 0.58 : 0.66;
+          const finalScale = fitScale < 1 ? Math.max(minimumScale, fitScale - extraOffset) : 1;
+
+          wheelCard.style.setProperty("--wheel-card-scale", String(finalScale));
+          wheelCardFrame.style.setProperty("--wheel-card-height", `${wheelCard.offsetHeight * finalScale}px`);
+        });
+      });
+    }
+
+    function renderProjectorSlide(index) {
+      const item = galleryImages[index];
+      if (!item) return;
+
+      projectorImg.classList.remove("show");
+
+      requestAnimationFrame(() => {
+        projectorImg.src = item.image;
+        projectorName.textContent = item.name || "Anónimo";
+        projectorMessage.textContent = item.message || "";
+        projectorByline.textContent = "Foto compartida por";
+        projectorCounter.textContent = `${index + 1} / ${galleryImages.length}`;
+        projectorMeta.classList.toggle("has-message", Boolean(item.message));
+        projectorImg.classList.add("show");
+      });
+    }
+
+    function nextProjectorSlide() {
+      if (!galleryImages.length) return;
+      projectorIndex = (projectorIndex + 1) % galleryImages.length;
+      renderProjectorSlide(projectorIndex);
+    }
+
+    function stopProjectorTimer() {
+      clearInterval(projectorTimerInterval);
+      projectorTimerInterval = null;
+      projectorToggle.style.setProperty("--projector-progress", "0");
+      projectorToggle.classList.remove("is-counting");
+    }
+
+    function startProjectorTimer() {
+      stopProjectorTimer();
+      projectorSlideStartedAt = Date.now();
+      projectorToggle.classList.add("is-counting");
+      projectorToggle.style.setProperty("--projector-progress", "0");
+
+      projectorTimerInterval = setInterval(() => {
+        const elapsed = Date.now() - projectorSlideStartedAt;
+        const progress = Math.min(100, (elapsed / projectorDelay) * 100);
+        projectorToggle.style.setProperty("--projector-progress", progress.toFixed(2));
+      }, 100);
+    }
+
+    function startProjectorAutoplay() {
+      clearInterval(projectorInterval);
+      projectorInterval = setInterval(() => {
+        nextProjectorSlide();
+        startProjectorTimer();
+      }, 6000);
+      projectorPlaying = true;
+      projectorToggle.innerHTML = '<span class="projector-icon-pause" aria-hidden="true"></span>';
+      projectorToggle.setAttribute("aria-label", "Pausar proyección");
+      startProjectorTimer();
+    }
+
+    function stopProjectorAutoplay() {
+      clearInterval(projectorInterval);
+      projectorInterval = null;
+      projectorPlaying = false;
+      projectorToggle.innerHTML = '<span class="projector-icon-play" aria-hidden="true"></span>';
+      projectorToggle.setAttribute("aria-label", "Reanudar proyección");
+      stopProjectorTimer();
+    }
+
+    function openProjector() {
+      if (!galleryImages.length) {
+        showToast("Aún no hay fotos para proyectar");
+        return;
+      }
+
+      projector.classList.add("open");
+      document.body.classList.add("overlay-open");
+      projectorIndex = 0;
+      renderProjectorSlide(projectorIndex);
+      startProjectorAutoplay();
+    }
+
+    function closeProjector() {
+      projector.classList.remove("open");
+      stopProjectorAutoplay();
+      if (!wheelPopup.classList.contains("open")) {
+        document.body.classList.remove("overlay-open");
+      }
+    }
+
+    async function compressImage(file) {
+      if (!file || !file.type.startsWith("image/")) return file;
+
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const image = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+
+      const maxSide = 1600;
+      const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+      const width = Math.round(image.width * scale);
+      const height = Math.round(image.height * scale);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(image, 0, 0, width, height);
+
+      const blob = await new Promise((resolve) => {
+        canvas.toBlob(resolve, "image/jpeg", 0.82);
+      });
+
+      if (!blob) return file;
+
+      const compressedName = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+      return new File([blob], compressedName, {
+        type: "image/jpeg",
+        lastModified: Date.now()
+      });
+    }
+
+    function clearFlipAutoClose(card) {
+      const timeoutId = flipTimers.get(card);
+      const intervalId = flipIntervals.get(card);
+
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        flipTimers.delete(card);
+      }
+
+      if (intervalId) {
+        clearInterval(intervalId);
+        flipIntervals.delete(card);
+      }
+
+      card.classList.remove("is-counting");
+      card.style.removeProperty("--flip-progress");
+    }
+
+    function startFlipAutoClose(card) {
+      clearFlipAutoClose(card);
+
+      const duration = 12000;
+      const startedAt = Date.now();
+      card.classList.add("is-counting");
+      card.style.setProperty("--flip-progress", "0");
+
+      const intervalId = setInterval(() => {
+        const elapsed = Date.now() - startedAt;
+        const progress = Math.min(100, (elapsed / duration) * 100);
+        card.style.setProperty("--flip-progress", progress.toFixed(2));
+      }, 120);
+
+      const timeoutId = setTimeout(() => {
+        clearFlipAutoClose(card);
+        card.classList.remove("is-flipped");
+      }, duration);
+
+      flipIntervals.set(card, intervalId);
+      flipTimers.set(card, timeoutId);
+    }
+
+    applyAlbumContent();
+    renderWheelBackground();
+    renderWheelLabels();
+
+    openWheelBtn.addEventListener("click", () => {
+      wheelPopup.classList.add("open");
+      document.body.classList.add("overlay-open");
+      resetWheelState();
+      adjustWheelPopupLayout();
+    });
+
+    summaryCover.addEventListener("click", () => {
+      if (clientDownloadModal.classList.contains("open") || adminModal.classList.contains("open")) return;
+      clientCoverTapCount += 1;
+      clearTimeout(clientCoverTapTimer);
+      clientCoverTapTimer = setTimeout(resetClientDownloadGesture, 5000);
+      if (clientCoverTapCount >= 7) openClientDownloadModal();
+    });
+
+    appIcon.addEventListener("click", () => {
+      if (adminModal.classList.contains("open")) return;
+
+      if (adminAccessStep > 1) {
+        resetAdminSequence();
+      }
+
+      appIconTapCount += 1;
+      adminAccessStep = 1;
+      armAdminSequenceReset();
+    });
+
+    liveBadge.addEventListener("click", () => {
+      if (adminModal.classList.contains("open")) return;
+      if (adminAccessStep !== 1 || appIconTapCount < 8) return;
+
+      liveBadgeTapCount += 1;
+      armAdminSequenceReset();
+
+      if (liveBadgeTapCount >= 3) {
+        openAdminModal();
+        resetAdminSequence();
+      }
+    });
+
+    openProjectorBtn.addEventListener("click", () => {
+      openProjector();
+    });
+
+    closeWheelBtn.addEventListener("click", () => {
+      closeWheelPopup();
+    });
+
+    wheelPopup.addEventListener("click", (event) => {
+      if (event.target === wheelPopup) {
+        closeWheelPopup();
+      }
+    });
+
+    spinWheelBtn.addEventListener("click", () => {
+      if (wheelSpinning) return;
+
+      wheelSpinning = true;
+      spinWheelBtn.disabled = true;
+      resetWheelState();
+
+      const selectedIndex = Math.floor(Math.random() * wheelOptions.length);
+      const slice = 360 / wheelOptions.length;
+      const targetCenter = selectedIndex * slice;
+      const extraTurns = 1800 + Math.floor(Math.random() * 360);
+      const desiredMod = (360 - targetCenter) % 360;
+      const currentMod = ((wheelRotation % 360) + 360) % 360;
+      const deltaToTarget = (desiredMod - currentMod + 360) % 360;
+      wheelRotation += extraTurns + deltaToTarget;
+
+      photoWheel.style.transform = `rotate(${wheelRotation}deg)`;
+
+      setTimeout(() => {
+        const result = getWheelResultFromRotation();
+        wheelResult.innerHTML = `<strong>${escapeAlbumHtml(albumConfig.wheelResultTitle || "Te tocó")}</strong><span class="wheel-result-title">${escapeAlbumHtml(result.option.label)}</span><span class="wheel-result-description">${escapeAlbumHtml(result.option.description)}</span>`;
+        wheelPopup.classList.add("has-result");
+        wheelResult.classList.remove("highlight");
+        void wheelResult.offsetWidth;
+        wheelResult.classList.add("highlight");
+        wheelUploadActions.classList.add("show");
+        adjustWheelPopupLayout();
+        wheelSpinning = false;
+        spinWheelBtn.disabled = false;
+      }, 4700);
+    });
+
+    window.addEventListener("resize", () => {
+      adjustWheelPopupLayout();
+    });
+
+    wheelTakePhoto.addEventListener("click", () => {
+      closeWheelPopup();
+      uploadCameraInput.click();
+    });
+
+    wheelPickPhoto.addEventListener("click", () => {
+      closeWheelPopup();
+      uploadGalleryInput.click();
+    });
+
+    projectorToggle.addEventListener("click", () => {
+      if (projectorPlaying) {
+        stopProjectorAutoplay();
+      } else {
+        startProjectorAutoplay();
+      }
+    });
+
+    closeProjectorBtn.addEventListener("click", () => {
+      closeProjector();
+    });
+
+    projector.addEventListener("click", (event) => {
+      if (event.target === projector) {
+        closeProjector();
+      }
+    });
+
+    projectorStage.addEventListener("click", () => {
+      if (projectorPlaying) {
+        stopProjectorAutoplay();
+      } else {
+        startProjectorAutoplay();
+      }
+    });
+
+    projectorMeta.addEventListener("click", () => {
+      if (projectorPlaying) {
+        stopProjectorAutoplay();
+      } else {
+        startProjectorAutoplay();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && projector.classList.contains("open")) {
+        closeProjector();
+      }
+
+      if (event.key === "Escape" && adminModal.classList.contains("open")) {
+        closeAdminModal();
+      }
+    });
+
+    function updateViewerMeta() {
+      const viewerMessage = document.getElementById("viewerMessage");
+      const currentItem = galleryImages[currentIndex];
+
+      if (!currentItem) {
+        viewerName.textContent = "";
+        viewerOverlayName.textContent = "";
+        viewerMessage.textContent = "";
+        viewerName.classList.remove("show");
+        viewerName.classList.remove("hidden");
+        viewerDedication.classList.remove("show");
+        viewerNoteTrigger.classList.remove("show");
+        viewer.classList.remove("note-open");
+        return;
+      }
+
+      viewerName.textContent = currentItem.name || "Anónimo";
+      viewerOverlayName.textContent = currentItem.name || "Anónimo";
+      viewerMessage.textContent = currentItem.message || "";
+
+      if (currentItem.name) {
+        viewerName.classList.add("show");
+      } else {
+        viewerName.classList.remove("show");
+      }
+
+      if (currentItem.message) {
+        viewerNoteTrigger.classList.add("show");
+        viewerNoteTrigger.classList.remove("hidden");
+      } else {
+        viewerNoteTrigger.classList.remove("show");
+        viewerNoteTrigger.classList.remove("hidden");
+        viewerDedication.classList.remove("show");
+        viewer.classList.remove("note-open");
+      }
+    }
+
+    function resetZoom() {
+      cancelViewerFrame();
+      zoomed = false;
+      viewer.classList.remove("zoomed");
+      isDragging = false;
+      currentX = 0;
+      currentY = 0;
+      pendingViewerTransform = "translate(0px, 0px) scale(1)";
+      pendingViewerOpacity = "1";
+      viewerImg.style.transform = "translate(0px, 0px) scale(1)";
+      viewerImg.style.opacity = "1";
+      viewerDedication.classList.remove("show");
+      viewer.classList.remove("note-open");
+      viewerNoteTrigger.classList.remove("hidden");
+      viewerName.classList.remove("hidden");
+    }
+
+    function nextImage() {
+      resetZoom();
+
+      if (currentIndex < galleryImages.length - 1) {
+        viewerImg.style.transform = "translateX(-30px)";
+        viewerImg.style.opacity = "0";
+
+        setTimeout(() => {
+          currentIndex++;
+          viewerImg.src = galleryImages[currentIndex].image;
+          updateCounter();
+          updateViewerMeta();
+          preloadViewerNeighbors(currentIndex);
+          viewerImg.style.transform = "translateX(30px)";
+
+          setTimeout(() => {
+            viewerImg.style.transform = "translateX(0)";
+            viewerImg.style.opacity = "1";
+          }, 50);
+        }, 150);
+      }
+    }
+
+    function prevImage() {
+      resetZoom();
+
+      if (currentIndex > 0) {
+        viewerImg.style.transform = "translateX(30px)";
+        viewerImg.style.opacity = "0";
+
+        setTimeout(() => {
+          currentIndex--;
+          viewerImg.src = galleryImages[currentIndex].image;
+          updateCounter();
+          updateViewerMeta();
+          preloadViewerNeighbors(currentIndex);
+          viewerImg.style.transform = "translateX(-30px)";
+
+          setTimeout(() => {
+            viewerImg.style.transform = "translateX(0)";
+            viewerImg.style.opacity = "1";
+          }, 50);
+        }, 150);
+      }
+    }
+
+    viewer.addEventListener("touchstart", (e) => {
+      if (zoomed) {
+        isDragging = true;
+        startXPan = e.touches[0].clientX - currentX;
+        startYPan = e.touches[0].clientY - currentY;
+        return;
+      }
+
+      startX = e.touches[0].clientX;
+      isSwiping = true;
+    }, { passive: true });
+
+    viewer.addEventListener("touchmove", (e) => {
+      if (zoomed && isDragging) {
+        e.preventDefault();
+        isSwiping = false;
+        currentX = e.touches[0].clientX - startXPan;
+        currentY = e.touches[0].clientY - startYPan;
+        scheduleViewerStyles(`translate(${currentX}px, ${currentY}px) scale(2)`, viewerImg.style.opacity || "1");
+        return;
+      }
+
+      if (!isSwiping) return;
+
+      e.preventDefault();
+
+      const currentTouchX = e.touches[0].clientX;
+      const diff = currentTouchX - startX;
+
+      scheduleViewerStyles(`translateX(${diff}px)`, String(Math.max(0.3, 1 - Math.abs(diff) / 300)));
+    }, { passive: false });
+
+    viewer.addEventListener("touchend", (e) => {
+      const currentTime = new Date().getTime();
+      const tapLength = currentTime - lastTap;
+
+      if (tapLength < 300 && tapLength > 0) {
+        if (!zoomed) {
+          zoomed = true;
+          viewer.classList.add("zoomed");
+          viewerImg.style.transform = `translate(${currentX}px, ${currentY}px) scale(2)`;
+        } else {
+          resetZoom();
+        }
+
+        lastTap = 0;
+        return;
+      }
+
+      lastTap = currentTime;
+
+      if (zoomed) {
+        isDragging = false;
+        isSwiping = false;
+        return;
+      }
+
+      viewerImg.style.opacity = "1";
+
+      const diff = startX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 80) {
+        if (diff > 0) {
+          nextImage();
+        } else {
+          prevImage();
+        }
+      }
+
+      viewerImg.style.transition = "transform 0.25s ease";
+      viewerImg.style.transform = "translateX(0)";
+
+      setTimeout(() => {
+        viewerImg.style.transition = "";
+      }, 250);
+    });
+
+    function openViewer(index) {
+      resetZoom();
+      viewer.style.display = "flex";
+      currentIndex = index;
+      viewerImg.src = galleryImages[currentIndex].image;
+      viewerImg.decoding = "async";
+      updateCounter();
+      updateViewerMeta();
+      preloadViewerNeighbors(currentIndex);
+    }
+
+    document.getElementById("closeViewer").onclick = function() {
+      viewer.style.display = "none";
+      resetZoom();
+    };
+
+    viewerNoteTrigger.addEventListener("click", () => {
+      viewerDedication.classList.add("show");
+      viewer.classList.add("note-open");
+      viewerNoteTrigger.classList.add("hidden");
+      viewerName.classList.add("hidden");
+    });
+
+    viewerNoteClose.addEventListener("click", () => {
+      viewerDedication.classList.remove("show");
+      viewer.classList.remove("note-open");
+      viewerNoteTrigger.classList.remove("hidden");
+      viewerName.classList.remove("hidden");
+    });
+
+    function handleSelectedFile(event) {
+      tempFile = event.target.files[0];
+      if (tempFile) {
+        pickerSheet.classList.remove("open");
+        modal.style.display = "flex";
+      }
+    }
+
+    function resetUploadForm() {
+      modal.style.display = "none";
+      nameInput.value = "";
+      messageInput.value = "";
+      anonCheckbox.checked = false;
+      nameInput.disabled = false;
+      nameInput.placeholder = "Tu nombre";
+      confirmBtn.disabled = false;
+      confirmBtn.innerText = albumPreviewMode ? "Agregar a vista previa" : "Subir foto";
+      uploadCameraInput.value = "";
+      uploadGalleryInput.value = "";
+      tempFile = null;
+    }
+
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        modal.style.display = "none";
+        tempFile = null;
+        uploadCameraInput.value = "";
+        uploadGalleryInput.value = "";
+      }
+    });
+
+    adminModal.addEventListener("click", (event) => {
+      if (event.target === adminModal) {
+        closeAdminModal();
+      }
+    });
+
+    adminClose.addEventListener("click", () => {
+      closeAdminModal();
+    });
+
+    clientDownloadModal.addEventListener("click", (event) => {
+      if (event.target === clientDownloadModal) closeClientDownloadModal();
+    });
+
+    clientDownloadClose.addEventListener("click", closeClientDownloadModal);
+
+    clientDownloadLogin.addEventListener("click", async () => {
+      const credentials = albumConfig.clientDownload || {};
+      const expectedUserHash = String(credentials.userHash || "");
+      const expectedPassHash = String(credentials.passHash || "");
+      clientDownloadError.textContent = "";
+
+      if (!expectedUserHash || !expectedPassHash) {
+        clientDownloadError.textContent = "El acceso de descarga todavía no está configurado.";
+        return;
+      }
+
+      clientDownloadLogin.disabled = true;
+      try {
+        const [userHash, passHash] = await Promise.all([
+          sha256(clientDownloadUser.value.trim()),
+          sha256(clientDownloadPass.value)
+        ]);
+        if (userHash !== expectedUserHash || passHash !== expectedPassHash) {
+          clientDownloadError.textContent = "Usuario o contraseña incorrectos.";
+          return;
+        }
+
+        clientDownloadAuth.classList.remove("show");
+        clientDownloadPanel.classList.add("show");
+        clientDownloadEvent.textContent = albumConfig.eventName || eventoID;
+        clientDownloadCount.textContent = `${galleryImages.length} ${galleryImages.length === 1 ? "fotografía" : "fotografías"}`;
+        clientDownloadButton.disabled = galleryImages.length === 0;
+        clientDownloadStatus.textContent = galleryImages.length ? "El archivo incluirá fotografías, nombres y dedicatorias." : "Aún no hay fotografías para descargar.";
+      } finally {
+        clientDownloadLogin.disabled = false;
+      }
+    });
+
+    clientDownloadPass.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") clientDownloadLogin.click();
+    });
+
+    clientDownloadButton.addEventListener("click", () => {
+      downloadClientAlbum().catch((error) => {
+        console.error(error);
+        clientDownloadButton.disabled = false;
+        clientDownloadButton.textContent = "Descargar álbum";
+        clientDownloadStatus.textContent = "No se pudo generar la descarga. Inténtalo nuevamente.";
+      });
+    });
+
+    adminLogin.addEventListener("click", async () => {
+      const username = adminUser.value.trim();
+      const password = adminPass.value;
+      adminLogin.disabled = true;
+      adminLoginError.textContent = "";
+
+      try {
+        const [userHash, passHash] = await Promise.all([
+          sha256(username),
+          sha256(password)
+        ]);
+
+        if (userHash !== adminCredentialHashes.user || passHash !== adminCredentialHashes.pass) {
+          adminLoginError.textContent = "Usuario o clave incorrectos.";
+          return;
+        }
+
+        const adminEmail = String(albumConfig.admin?.email || "").trim();
+        const adminUid = String(albumConfig.admin?.uid || "").trim();
+        if (adminEmail) {
+          if (!auth) {
+            adminLoginError.textContent = "Firebase Authentication no está disponible.";
+            return;
+          }
+          try {
+            const credential = await auth.signInWithEmailAndPassword(adminEmail, password);
+            if (adminUid && credential.user.uid !== adminUid) {
+              await auth.signOut();
+              adminLoginError.textContent = "La cuenta no coincide con el administrador configurado.";
+              return;
+            }
+          } catch (error) {
+            adminLoginError.textContent = "Firebase no autorizó esta cuenta.";
+            return;
+          }
+        }
+
+        adminUnlocked = true;
+        adminAuth.classList.remove("show");
+        adminPanel.classList.add("show");
+        renderAdminList();
+      } finally {
+        adminLogin.disabled = false;
+      }
+    });
+
+    adminPass.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        adminLogin.click();
+      }
+    });
+
+    fabUpload.addEventListener("click", () => {
+      pickerSheet.classList.add("open");
+    });
+
+    closePickerBtn.addEventListener("click", () => {
+      pickerSheet.classList.remove("open");
+    });
+
+    pickerSheet.addEventListener("click", (event) => {
+      if (event.target === pickerSheet) {
+        pickerSheet.classList.remove("open");
+      }
+    });
+
+    openCameraBtn.addEventListener("click", () => {
+      uploadCameraInput.click();
+    });
+
+    openGalleryBtn.addEventListener("click", () => {
+      uploadGalleryInput.click();
+    });
+
+    uploadCameraInput.addEventListener("change", handleSelectedFile);
+    uploadGalleryInput.addEventListener("change", handleSelectedFile);
+
+    confirmBtn.addEventListener("click", async () => {
+      if (!tempFile || confirmBtn.disabled) return;
+
+      if (albumPreviewMode) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerText = "Preparando...";
+
+        try {
+          const processedFile = await compressImage(tempFile);
+          const previewUrl = URL.createObjectURL(processedFile);
+          previewGalleryItems.unshift({
+            id: `preview-${Date.now()}`,
+            image: previewUrl,
+            name: anonCheckbox.checked ? "Anónimo" : (nameInput.value.trim() || "Invitado"),
+            message: messageInput.value.trim(),
+            createdAt: new Date().toISOString()
+          });
+          renderAlbumPreviewGallery();
+          resetUploadForm();
+          showToast("Foto agregada a la vista previa");
+        } catch (error) {
+          console.error(error);
+          confirmBtn.disabled = false;
+          confirmBtn.innerText = "Agregar a vista previa";
+          showToast("No se pudo preparar la fotografía");
+        }
+        return;
+      }
+
+      if (!firebaseReady || !storage || !db) {
+        showToast("Conecta Firebase para subir fotos");
+        return;
+      }
+
+      confirmBtn.disabled = true;
+      confirmBtn.innerText = "Subiendo...";
+
+      const anonimo = anonCheckbox.checked;
+      const dedicatoria = messageInput.value.trim();
+
+      try {
+        const processedFile = await compressImage(tempFile);
+        const fileName = `${Date.now()}_${processedFile.name}`;
+        const storageRef = storage.ref(`galeria/${eventoID}/${fileName}`);
+
+        await storageRef.put(processedFile);
+        const url = await storageRef.getDownloadURL();
+
+        await db.collection("galeria")
+          .doc(eventoID)
+          .collection("fotos")
+          .add({
+            image: url,
+            name: anonimo ? "Anónimo" : (nameInput.value || "Invitado"),
+            message: dedicatoria,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+        resetUploadForm();
+        showToast("Foto subida con éxito");
+      } catch (error) {
+        console.error(error);
+        confirmBtn.disabled = false;
+        confirmBtn.innerText = "Subir foto";
+      }
+    });
+
+    function renderAlbumPreviewGallery() {
+      feed.innerHTML = "";
+      const fragment = document.createDocumentFragment();
+
+      if (previewGalleryItems.length) {
+        galleryImages = previewGalleryItems.slice();
+        openProjectorBtn.parentElement.classList.remove("hidden");
+
+        galleryImages.forEach((item, index) => {
+          const card = document.createElement("article");
+          card.className = "polaroid";
+          const inner = document.createElement("div");
+          inner.className = "polaroid-inner";
+          const front = document.createElement("div");
+          front.className = "polaroid-face polaroid-front";
+          const openButton = document.createElement("button");
+          openButton.type = "button";
+          openButton.className = "photo-open";
+          const img = document.createElement("img");
+          img.src = item.image;
+          img.alt = item.name ? `Foto de vista previa compartida por ${item.name}` : "Foto de vista previa";
+          const caption = document.createElement("p");
+          caption.textContent = item.name || "Invitado";
+          openButton.appendChild(img);
+          openButton.appendChild(caption);
+          openButton.addEventListener("click", () => openViewer(index));
+          front.appendChild(openButton);
+          inner.appendChild(front);
+          card.appendChild(inner);
+          fragment.appendChild(card);
+        });
+
+        feed.appendChild(fragment);
+        updateCounter();
+        return;
+      }
+
+      galleryImages = [];
+      openProjectorBtn.parentElement.classList.add("hidden");
+      const previewNames = ["Invitado", "Familia", "Amigos"];
+
+      previewNames.forEach((name) => {
+        const card = document.createElement("article");
+        card.className = "polaroid";
+        const inner = document.createElement("div");
+        inner.className = "polaroid-inner";
+        const front = document.createElement("div");
+        front.className = "polaroid-face polaroid-front";
+        const photo = document.createElement("div");
+        photo.className = "photo-open";
+        const img = document.createElement("img");
+        img.src = albumConfig.coverImage || "";
+        img.alt = "Vista previa de una foto del álbum";
+        const caption = document.createElement("p");
+        caption.textContent = name;
+        photo.appendChild(img);
+        photo.appendChild(caption);
+        front.appendChild(photo);
+        inner.appendChild(front);
+        card.appendChild(inner);
+        fragment.appendChild(card);
+      });
+
+      feed.appendChild(fragment);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      feed.innerHTML = "<div class='empty-state'><strong>Cargando fotos...</strong><span>Espera un momento</span></div>";
+      openProjectorBtn.parentElement.classList.add("hidden");
+
+      if (albumPreviewMode) {
+        confirmBtn.innerText = "Agregar a vista previa";
+        if (modalCopy) modalCopy.textContent = "La foto se mostrará solo en esta vista previa del panel.";
+      }
+
+      if (!firebaseReady || !db) {
+        if (albumPreviewMode) {
+          renderAlbumPreviewGallery();
+        } else {
+          feed.innerHTML = "<div class='empty-state'><strong>Álbum listo para conectar</strong><span>Agrega la configuración de Firebase para recibir fotografías.</span></div>";
+        }
+        return;
+      }
+
+      db.collection("galeria")
+        .doc(eventoID)
+        .collection("fotos")
+        .orderBy("createdAt", "desc")
+        .onSnapshot((snapshot) => {
+          feed.innerHTML = "";
+
+          if (snapshot.empty) {
+            feed.innerHTML = "<div class='empty-state'><strong>Aún no hay fotos</strong><span>Tu recuerdo puede ser el primero</span></div>";
+            galleryImages = [];
+            openProjectorBtn.parentElement.classList.add("hidden");
+            updateCounter();
+            if (adminUnlocked && adminModal.classList.contains("open")) {
+              renderAdminList();
+            }
+            return;
+          }
+
+          galleryImages = [];
+          openProjectorBtn.parentElement.classList.remove("hidden");
+          const fragment = document.createDocumentFragment();
+
+          snapshot.docs.forEach((doc, index) => {
+            const data = doc.data();
+            galleryImages.push({
+              id: doc.id,
+              image: data.image,
+              name: data.name || "Invitado",
+              message: data.message || "",
+              createdAt: data.createdAt?.toDate?.().toISOString?.() || ""
+            });
+
+            const card = document.createElement("article");
+            card.className = "polaroid";
+
+            const inner = document.createElement("div");
+            inner.className = "polaroid-inner";
+
+            const front = document.createElement("div");
+            front.className = "polaroid-face polaroid-front";
+
+            const frontFlip = document.createElement("button");
+            frontFlip.type = "button";
+            frontFlip.className = "flip-toggle";
+            frontFlip.setAttribute("aria-label", "Voltear foto");
+
+            const openButton = document.createElement("button");
+            openButton.type = "button";
+            openButton.className = "photo-open";
+
+            const img = document.createElement("img");
+            img.src = data.image;
+            img.loading = "lazy";
+            img.decoding = "async";
+            img.fetchPriority = "low";
+            img.alt = data.name ? `Foto compartida por ${data.name}` : "Foto compartida en la galería";
+
+            const name = document.createElement("p");
+            name.textContent = data.name || "Invitado";
+
+            openButton.appendChild(img);
+            openButton.appendChild(name);
+            front.appendChild(frontFlip);
+            front.appendChild(openButton);
+
+            const back = document.createElement("div");
+            back.className = "polaroid-face polaroid-back";
+
+            const backFlip = document.createElement("button");
+            backFlip.type = "button";
+            backFlip.className = "flip-toggle";
+            backFlip.setAttribute("aria-label", "Regresar foto");
+
+            const backContent = document.createElement("div");
+            backContent.className = "polaroid-back-content";
+
+            const backLabel = document.createElement("span");
+            backLabel.className = "polaroid-back-label";
+            backLabel.textContent = data.message ? "Dedicatoria" : "Compartido por";
+
+            const backMessage = document.createElement("div");
+            backMessage.className = "polaroid-back-message";
+            backMessage.textContent = data.message || (data.name || "Anónimo");
+
+            const backName = document.createElement("div");
+            backName.className = "polaroid-back-name";
+            backName.textContent = data.message ? (data.name || "Anónimo") : "";
+
+            backContent.appendChild(backLabel);
+            backContent.appendChild(backMessage);
+            if (backName.textContent) {
+              backContent.appendChild(backName);
+            }
+
+            back.appendChild(backFlip);
+            back.appendChild(backContent);
+
+            inner.appendChild(front);
+            inner.appendChild(back);
+            card.appendChild(inner);
+
+            openButton.onclick = () => {
+              openViewer(index);
+            };
+
+            frontFlip.onclick = (event) => {
+              event.stopPropagation();
+              card.classList.add("is-flipped");
+              startFlipAutoClose(card);
+            };
+
+            backFlip.onclick = (event) => {
+              event.stopPropagation();
+              clearFlipAutoClose(card);
+              card.classList.remove("is-flipped");
+            };
+
+            fragment.appendChild(card);
+          });
+
+          feed.appendChild(fragment);
+          if (adminUnlocked && adminModal.classList.contains("open")) {
+            renderAdminList();
+          }
+        });
+    });
+  </script>
+</body>
+</html>
